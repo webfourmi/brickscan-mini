@@ -1,10 +1,11 @@
-const CACHE = "brickscan-mini-v1.2";
+const CACHE = "brickscan-mini-v1.2.1";
 const ASSETS = [
   "./",
   "index.html",
   "styles.css",
   "data.js",
   "app.js",
+  "camera-hotfix.js",
   "manifest.webmanifest",
   "icons/icon-192.png",
   "icons/icon-512.png"
@@ -28,7 +29,6 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
-
   event.respondWith(
     fetch(event.request)
       .then(response => {
