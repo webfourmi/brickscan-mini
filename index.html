@@ -4,21 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#111827">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="description" content="Scanner mobile de codes Data Matrix pour identifier les minifigurines de collection.">
-  <title>BrickScan Mini 1.3</title>
-  <link rel="manifest" href="manifest.webmanifest">
+  <title>BrickScan Mini 1.3.1</title>
+  <link rel="manifest" href="manifest.webmanifest?v=131">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=131">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true">▦</div>
-      <div><h1>BrickScan Mini</h1><p>Scanner de minifigurines · v1.3</p></div>
+      <div><h1>BrickScan Mini</h1><p>Scanner de minifigurines · v1.3.1</p></div>
       <button id="installBtn" class="icon-btn hidden" title="Installer">＋</button>
     </header>
-
     <main>
       <section id="scanView" class="view active">
         <div class="hero-card">
@@ -26,17 +28,16 @@
           <h2>Vise le petit carré sous la boîte</h2>
           <p>Data Matrix ou QR. Couvre le grand code-barres avec un doigt si le téléphone accroche dessus.</p>
         </div>
-
         <div class="scanner-card">
           <div id="nativeScanner" class="scanner-stage">
-            <video id="video" playsinline muted></video>
+            <video id="video" autoplay playsinline muted></video>
             <div class="scan-mask"><div class="scan-box"><span></span></div></div>
             <div id="scannerPlaceholder" class="placeholder">
               <div class="dm-icon">▦</div><strong>Caméra arrêtée</strong><small>Appuie sur « Scanner »</small>
             </div>
           </div>
           <div id="fallbackScanner" class="fallback hidden"></div>
-          <div id="scanStatus" class="status">Prêt</div>
+          <div id="scanStatus" class="status">Prêt · v1.3.1</div>
           <div class="actions-row">
             <button id="startBtn" class="btn primary">📷 Scanner en direct</button>
             <label for="photoInput" class="btn secondary">🖼️ Photo du code<input id="photoInput" type="file" accept="image/*" capture="environment" hidden></label>
@@ -45,7 +46,6 @@
           </div>
           <div id="zoomWrap" class="zoom hidden"><label for="zoom">Zoom</label><input id="zoom" type="range" min="1" max="1" step="0.1" value="1"></div>
         </div>
-
         <section id="resultCard" class="result-card hidden" aria-live="polite">
           <div class="result-badge">IDENTIFIÉE</div>
           <div class="fig-avatar" id="resultAvatar">1</div>
@@ -55,44 +55,33 @@
           <button id="ownedBtn" class="btn primary full">✓ Ajouter à ma collection</button>
           <button id="scanAgainBtn" class="btn ghost full">Scanner une autre boîte</button>
         </section>
-
         <section id="unknownCard" class="unknown-card hidden">
-          <h3>Code lu, mais inconnu</h3>
-          <p id="unknownText"></p>
-          <button id="copyUnknown" class="btn secondary">Copier le code</button>
+          <h3>Code lu, mais inconnu</h3><p id="unknownText"></p><button id="copyUnknown" class="btn secondary">Copier le code</button>
         </section>
-
         <details class="manual-card">
           <summary>⌨️ Saisie manuelle</summary>
-          <p>Entre l’identifiant à 7 chiffres contenu dans le Data Matrix, ou colle toute la chaîne décodée. Le numéro imprimé à côté du carré n’est pas forcément cet identifiant.</p>
+          <p>Entre l’identifiant à 7 chiffres contenu dans le Data Matrix, ou colle toute la chaîne décodée.</p>
           <div class="manual-row"><input id="manualInput" inputmode="numeric" placeholder="ex. 6522981 ou chaîne complète"><button id="manualBtn" class="btn secondary">Identifier</button></div>
         </details>
       </section>
-
       <section id="collectionView" class="view">
         <div class="section-head"><div><div class="eyebrow">MA COLLECTION</div><h2>Figurines trouvées</h2></div><button id="clearCollection" class="link-btn">Réinitialiser</button></div>
-        <div id="collectionStats" class="stats-card"></div>
-        <div id="seriesFilters" class="filters"></div>
-        <div id="collectionGrid" class="collection-grid"></div>
+        <div id="collectionStats" class="stats-card"></div><div id="seriesFilters" class="filters"></div><div id="collectionGrid" class="collection-grid"></div>
       </section>
-
       <section id="historyView" class="view">
         <div class="section-head"><div><div class="eyebrow">HISTORIQUE</div><h2>Derniers scans</h2></div><button id="clearHistory" class="link-btn">Effacer</button></div>
         <div id="historyList" class="history-list"></div>
       </section>
-
       <section id="infoView" class="view">
         <div class="info-card">
-          <div class="eyebrow">MODE D’EMPLOI</div>
-          <h2>Le bon code est le Data Matrix</h2>
+          <div class="eyebrow">MODE D’EMPLOI</div><h2>Le bon code est le Data Matrix</h2>
           <ol><li>Retourne la boîte.</li><li>Repère le petit carré proche du code-barres.</li><li>Vise-le à 6–12 cm, bien à plat.</li><li>Si le direct hésite, utilise « Photo du code ».</li></ol>
           <h3>Séries incluses</h3><p>Séries 25, 26, 27, 28 et 29, Dungeons & Dragons et Spider-Verse.</p>
           <h3>Confidentialité</h3><p>Le scan est effectué sur ton appareil. Ta collection et ton historique sont stockés localement dans le navigateur.</p>
-          <div class="disclaimer">Application indépendante de fan. LEGO® est une marque du groupe LEGO, qui ne sponsorise ni n’approuve cette application. Les correspondances de codes proviennent de données communautaires et peuvent évoluer selon les lots de production.</div>
+          <div class="disclaimer">Application indépendante de fan. LEGO® est une marque du groupe LEGO, qui ne sponsorise ni n’approuve cette application.</div>
         </div>
       </section>
     </main>
-
     <nav class="bottom-nav" aria-label="Navigation">
       <button data-view="scanView" class="nav-btn active"><span>▦</span><small>Scanner</small></button>
       <button data-view="collectionView" class="nav-btn"><span>◆</span><small>Collection</small></button>
@@ -100,7 +89,7 @@
       <button data-view="infoView" class="nav-btn"><span>ⓘ</span><small>Infos</small></button>
     </nav>
   </div>
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+  <script src="data.js?v=131"></script>
+  <script src="app.js?v=131"></script>
 </body>
 </html>
