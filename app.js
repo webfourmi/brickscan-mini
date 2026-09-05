@@ -3,14 +3,13 @@
   const codeIndex = new Map();
   const figIndex = new Map();
   for (const s of data) for (const f of s.figures) {
-    figIndex.set(f.id, {...f, seriesId:s.id, seriesName:s.name, set:s.set});
-    for (const c of f.codes) codeIndex.set(c, {...f, seriesId:s.id, seriesName:s.name, set:s.set});
+    const fig = {...f, seriesId:s.id, seriesName:s.name, set:s.set};
+    figIndex.set(f.id, fig);
+    for (const c of f.codes) codeIndex.set(String(c), fig);
   }
 
   const $ = id => document.getElementById(id);
   const video = $('video');
-  const nativeScanner = $('nativeScanner');
-  const fallbackScanner = $('fallbackScanner');
   const status = $('scanStatus');
   const placeholder = $('scannerPlaceholder');
   const startBtn = $('startBtn');
@@ -19,22 +18,36 @@
   const zoomWrap = $('zoomWrap');
   const zoom = $('zoom');
   const photoInput = $('photoInput');
-  let stream = null, detector = null, scanning = false, lastDetect = 0, fallback = null, torchOn = false;
-  let currentResult = null, lastRaw = '', deferredInstall = null, scanHintTimer = null;
+  const nativeScanner = $('nativeScanner');
+  const fallbackScanner = $('fallbackScanner');
+
+  let stream = null;
+  let detector = null;
+  let scanning = false;
+  let scanBusy = false;
+  let lastDetect = 0;
+  let torchOn = false;
+  let currentResult = null;
+  let lastRaw = '';
+  let deferredInstall = null;
 
   const loadSet = key => new Set(JSON.parse(localStorage.getItem(key) || '[]'));
   const saveSet = (key,set) => localStorage.setItem(key, JSON.stringify([...set]));
   let owned = loadSet('brickscan-owned');
   let history = JSON.parse(localStorage.getItem('brickscan-history') || '[]');
 
-  function setStatus(text, kind='') { status.textContent = text; status.dataset.kind = kind; }
+  function setStatus(text, kind='') {
+    if (!status) return;
+    status.textContent = text;
+    status.dataset.kind = kind;
+  }
 
   function extractCandidates(raw) {
     const text = String(raw || '').trim();
-    const exact = text.match(/(?:^|\D)(\d{7})(?=\D|$)/g) || [];
-    const cleaned = exact.map(v => (v.match(/\d{7}/)||[])[0]).filter(Boolean);
-    if (/^\d{7}$/.test(text)) cleaned.unshift(text);
-    return [...new Set(cleaned)];
+    const matches = text.match(/(?:^|\D)(\d{7})(?=\D|$)/g) || [];
+    const out = matches.map(v => (v.match(/\d{7}/)||[])[0]).filter(Boolean);
+    if (/^\d{7}$/.test(text)) out.unshift(text);
+    return [...new Set(out)];
   }
 
   function extractFactory(raw) {
@@ -44,15 +57,15 @@
   }
 
   function identify(raw, source='scan') {
-    const candidates = extractCandidates(raw);
+    lastRaw = String(raw || '');
+    const candidates = extractCandidates(lastRaw);
     const code = candidates.find(c => codeIndex.has(c));
-    lastRaw = String(raw||'');
     if (!code) {
-      showUnknown(raw, candidates[0] || '');
+      showUnknown(lastRaw, candidates[0] || '');
       return false;
     }
     const fig = codeIndex.get(code);
-    showResult(fig, code, extractFactory(raw));
+    showResult(fig, code, extractFactory(lastRaw));
     pushHistory(fig, code, source);
     if (navigator.vibrate) navigator.vibrate([50,40,80]);
     return true;
@@ -60,8 +73,8 @@
 
   function showResult(fig, code, factory) {
     currentResult = fig;
-    $('unknownCard').classList.add('hidden');
-    $('resultCard').classList.remove('hidden');
+    $('unknownCard')?.classList.add('hidden');
+    $('resultCard')?.classList.remove('hidden');
     $('resultAvatar').textContent = fig.number;
     $('resultName').textContent = fig.name;
     $('resultSeries').textContent = `${fig.seriesName} · set ${fig.set}`;
@@ -73,9 +86,11 @@
 
   function showUnknown(raw, candidate) {
     currentResult = null;
-    $('resultCard').classList.add('hidden');
-    $('unknownCard').classList.remove('hidden');
-    $('unknownText').textContent = candidate ? `Identifiant candidat : ${candidate}\n${raw}` : String(raw || 'Aucun identifiant à 7 chiffres détecté.');
+    $('resultCard')?.classList.add('hidden');
+    $('unknownCard')?.classList.remove('hidden');
+    $('unknownText').textContent = candidate
+      ? `Identifiant candidat : ${candidate}\n${raw}`
+      : String(raw || 'Aucun identifiant à 7 chiffres détecté.');
     $('unknownCard').scrollIntoView({behavior:'smooth', block:'nearest'});
   }
 
@@ -88,220 +103,206 @@
   }
 
   function pushHistory(fig, code, source) {
-    const now=Date.now();
+    const now = Date.now();
     if (history[0] && history[0].id===fig.id && now-history[0].ts<3000) return;
     history.unshift({id:fig.id, code, source, ts:now});
-    history=history.slice(0,30);
+    history = history.slice(0,30);
     localStorage.setItem('brickscan-history', JSON.stringify(history));
   }
 
-  function scannerFormats() {
-    if (!window.Html5QrcodeSupportedFormats) return undefined;
-    return [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE];
+  async function buildDetector() {
+    detector = null;
+    if (!('BarcodeDetector' in window)) return false;
+    try {
+      const supported = await BarcodeDetector.getSupportedFormats();
+      const formats = [];
+      if (supported.includes('data_matrix')) formats.push('data_matrix');
+      if (supported.includes('qr_code')) formats.push('qr_code');
+      if (!formats.length) return false;
+      detector = new BarcodeDetector({formats});
+      return true;
+    } catch (e) {
+      console.warn('BarcodeDetector indisponible', e);
+      return false;
+    }
   }
 
   async function startScanner() {
-    $('resultCard').classList.add('hidden');
-    $('unknownCard').classList.add('hidden');
+    $('resultCard')?.classList.add('hidden');
+    $('unknownCard')?.classList.add('hidden');
+
     if (!window.isSecureContext && location.hostname !== 'localhost') {
-      setStatus('La caméra nécessite HTTPS. Utilise la saisie manuelle ou la photo.');
+      setStatus('La caméra nécessite HTTPS.');
       return;
     }
-    startBtn.disabled=true;
-    setStatus('Chargement du lecteur Data Matrix…');
-    try {
-      await startFallback();
-    } catch (e) {
-      console.error(e);
-      setStatus('Le lecteur n’a pas démarré. Vérifie l’autorisation caméra.');
-      startBtn.disabled=false;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus('Ce navigateur ne permet pas l’accès caméra.');
+      return;
     }
-  }
 
-  async function supportsNativeDataMatrix() {
-    if (!('BarcodeDetector' in window)) return false;
-    try { const f=await BarcodeDetector.getSupportedFormats(); return f.includes('data_matrix'); } catch { return false; }
-  }
+    await stopScanner(false);
+    startBtn.disabled = true;
+    setStatus('Ouverture de la caméra…');
 
-  async function startNative() {
-    stream = await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}});
-    video.srcObject=stream;
-    await video.play();
-    placeholder.classList.add('hidden');
-    detector = new BarcodeDetector({formats:['data_matrix','qr_code']});
-    scanning=true;
-    startBtn.classList.add('hidden');
-    stopBtn.classList.remove('hidden');
-    setStatus('Vise le Data Matrix…');
-    setupTrackControls();
-    requestAnimationFrame(scanLoop);
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio:false,
+        video:{
+          facingMode:{ideal:'environment'},
+          width:{ideal:1920},
+          height:{ideal:1080}
+        }
+      });
+
+      video.srcObject = stream;
+      video.setAttribute('playsinline','');
+      video.muted = true;
+      await video.play();
+      placeholder?.classList.add('hidden');
+      nativeScanner?.classList.remove('hidden');
+      fallbackScanner?.classList.add('hidden');
+
+      scanning = true;
+      startBtn.classList.add('hidden');
+      stopBtn.classList.remove('hidden');
+      setupTrackControls();
+
+      const canDecode = await buildDetector();
+      setStatus(canDecode
+        ? 'Caméra active · lecture Data Matrix en cours…'
+        : 'Caméra active · utilise « Photo du code » pour identifier');
+
+      if (canDecode) requestAnimationFrame(scanLoop);
+    } catch (e) {
+      console.error('Erreur caméra', e);
+      await stopScanner(false);
+      if (e?.name === 'NotAllowedError') setStatus('Accès caméra refusé. Autorise la caméra dans Chrome.');
+      else if (e?.name === 'NotFoundError') setStatus('Aucune caméra arrière disponible.');
+      else setStatus(`Impossible d’ouvrir la caméra${e?.name ? ' · '+e.name : ''}`);
+    }
   }
 
   async function scanLoop(ts) {
     if (!scanning || !detector) return;
-    if (ts-lastDetect>180 && video.readyState>=2) {
-      lastDetect=ts;
+    if (!scanBusy && ts-lastDetect > 220 && video.readyState >= 2) {
+      lastDetect = ts;
+      scanBusy = true;
       try {
-        const codes=await detector.detect(video);
-        if (codes.length) {
-          const raw=codes[0].rawValue || '';
-          if (identify(raw)) { await stopScanner(); return; }
+        const codes = await detector.detect(video);
+        if (codes?.length) {
+          const raw = codes[0].rawValue || '';
+          if (raw && identify(raw, 'camera')) {
+            await stopScanner(false);
+            setStatus('Code identifié ✓');
+            return;
+          }
         }
-      } catch(e) {}
+      } catch (_) {
+      } finally {
+        scanBusy = false;
+      }
     }
     if (scanning) requestAnimationFrame(scanLoop);
   }
 
-  function loadFallbackLib() {
-    if (window.Html5Qrcode) return Promise.resolve();
-    return new Promise((resolve,reject)=>{
-      const s=document.createElement('script');
-      s.src='https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js';
-      s.onload=resolve;
-      s.onerror=()=>reject(new Error('Bibliothèque de scan indisponible'));
-      document.head.appendChild(s);
-    });
-  }
-
-  async function startFallback() {
-    await loadFallbackLib();
-    nativeScanner.classList.add('hidden');
-    fallbackScanner.classList.remove('hidden');
-
-    fallback = new Html5Qrcode('fallbackScanner', {
-      formatsToSupport: scannerFormats(),
-      useBarCodeDetectorIfSupported: false,
-      verbose: false
-    });
-
-    scanning=true;
-    startBtn.classList.add('hidden');
-    stopBtn.classList.remove('hidden');
-    setStatus('ZXing actif · centre le petit carré à 6–12 cm');
-
-    await fallback.start(
-      {
-        facingMode:{ideal:'environment'},
-        width:{ideal:1920},
-        height:{ideal:1080}
-      },
-      {
-        fps:15,
-        qrbox:(viewWidth, viewHeight)=>{
-          const edge=Math.floor(Math.min(viewWidth,viewHeight)*0.82);
-          return {width:edge,height:edge};
-        },
-        aspectRatio:1.0,
-        disableFlip:true
-      },
-      raw=>{
-        if (identify(raw)) stopScanner();
-      },
-      ()=>{}
-    );
-
-    try {
-      await fallback.applyVideoConstraints({advanced:[{focusMode:'continuous'}]});
-    } catch (_) {}
-
-    clearTimeout(scanHintTimer);
-    scanHintTimer = setTimeout(()=>{
-      if (scanning) setStatus('Toujours rien ? Essaie « Photo du code » : c’est souvent plus fiable.');
-    }, 6000);
-  }
-
-  async function scanPhoto(file) {
-    if (!file) return;
-    if (scanning) await stopScanner();
-    $('resultCard').classList.add('hidden');
-    $('unknownCard').classList.add('hidden');
-    setStatus('Analyse de la photo…');
-    try {
-      await loadFallbackLib();
-      nativeScanner.classList.add('hidden');
-      fallbackScanner.classList.remove('hidden');
-      const reader = new Html5Qrcode('fallbackScanner', {
-        formatsToSupport: scannerFormats(),
-        useBarCodeDetectorIfSupported: false,
-        verbose: false
-      });
-      const result = await reader.scanFileV2(file, true);
-      const raw = result?.decodedText || result?.decodedResult?.decodedText || '';
-      try { await reader.clear(); } catch (_) {}
-      fallbackScanner.classList.add('hidden');
-      nativeScanner.classList.remove('hidden');
-      if (!raw) throw new Error('Aucun texte décodé');
-      identify(raw, 'photo');
-      setStatus('Code lu depuis la photo ✓');
-    } catch (e) {
-      console.error(e);
-      fallbackScanner.classList.add('hidden');
-      nativeScanner.classList.remove('hidden');
-      setStatus('Code non lu. Prends la photo de plus près, nette et bien à plat.');
-    } finally {
-      if (photoInput) photoInput.value='';
-    }
-  }
-
-  async function stopScanner() {
-    scanning=false;
-    clearTimeout(scanHintTimer);
-    if (fallback) {
-      try{await fallback.stop();}catch{}
-      try{await fallback.clear();}catch{}
-      fallback=null;
-    }
+  async function stopScanner(resetStatus=true) {
+    scanning = false;
+    scanBusy = false;
+    detector = null;
+    torchOn = false;
     if (stream) {
-      stream.getTracks().forEach(t=>t.stop());
-      stream=null;
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
     }
-    video.srcObject=null;
-    detector=null;
-    torchOn=false;
-    nativeScanner.classList.remove('hidden');
-    fallbackScanner.classList.add('hidden');
-    placeholder.classList.remove('hidden');
-    startBtn.disabled=false;
+    if (video) {
+      try { video.pause(); } catch(_) {}
+      video.srcObject = null;
+    }
+    placeholder?.classList.remove('hidden');
+    startBtn.disabled = false;
     startBtn.classList.remove('hidden');
     stopBtn.classList.add('hidden');
     torchBtn.classList.add('hidden');
     zoomWrap.classList.add('hidden');
-    setStatus('Prêt');
+    if (resetStatus) setStatus('Prêt');
   }
 
   function setupTrackControls() {
-    const track=stream?.getVideoTracks?.()[0];
-    if(!track) return;
-    const caps=track.getCapabilities?.() || {};
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    const caps = track.getCapabilities?.() || {};
     if (caps.torch) torchBtn.classList.remove('hidden');
     if (caps.zoom) {
-      zoom.min=caps.zoom.min;
-      zoom.max=caps.zoom.max;
-      zoom.step=caps.zoom.step||0.1;
-      zoom.value=Math.min(Math.max(2,caps.zoom.min),caps.zoom.max);
+      zoom.min = caps.zoom.min;
+      zoom.max = caps.zoom.max;
+      zoom.step = caps.zoom.step || 0.1;
+      zoom.value = Math.min(Math.max(2,caps.zoom.min),caps.zoom.max);
       zoomWrap.classList.remove('hidden');
       applyZoom();
     }
   }
 
-  async function applyZoom(){
-    const track=stream?.getVideoTracks?.()[0];
-    if(!track)return;
-    try{await track.applyConstraints({advanced:[{zoom:Number(zoom.value)}]})}catch{}
+  async function applyZoom() {
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    try { await track.applyConstraints({advanced:[{zoom:Number(zoom.value)}]}); } catch(_) {}
   }
 
-  async function toggleTorch(){
-    const track=stream?.getVideoTracks?.()[0];
-    if(!track)return;
-    torchOn=!torchOn;
-    try{
+  async function toggleTorch() {
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    torchOn = !torchOn;
+    try {
       await track.applyConstraints({advanced:[{torch:torchOn}]});
-      torchBtn.textContent=torchOn?'🔦 Lampe ON':'🔦 Lampe';
-    }catch{}
+      torchBtn.textContent = torchOn ? '🔦 Lampe ON' : '🔦 Lampe';
+    } catch(_) {}
+  }
+
+  function loadPhotoDecoder() {
+    if (window.Html5Qrcode) return Promise.resolve();
+    return new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js';
+      s.onload=resolve;
+      s.onerror=()=>reject(new Error('Bibliothèque de décodage indisponible'));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function scanPhoto(file) {
+    if (!file) return;
+    await stopScanner(false);
+    $('resultCard')?.classList.add('hidden');
+    $('unknownCard')?.classList.add('hidden');
+    setStatus('Analyse de la photo…');
+    try {
+      await loadPhotoDecoder();
+      fallbackScanner.classList.remove('hidden');
+      nativeScanner.classList.add('hidden');
+      const formats = window.Html5QrcodeSupportedFormats
+        ? [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE]
+        : undefined;
+      const reader = new Html5Qrcode('fallbackScanner', {formatsToSupport:formats, verbose:false});
+      const result = await reader.scanFileV2(file, true);
+      const raw = result?.decodedText || result?.decodedResult?.decodedText || '';
+      try { await reader.clear(); } catch(_) {}
+      fallbackScanner.classList.add('hidden');
+      nativeScanner.classList.remove('hidden');
+      if (!raw) throw new Error('Aucun code décodé');
+      identify(raw, 'photo');
+      setStatus('Code lu depuis la photo ✓');
+    } catch (e) {
+      console.error('Erreur photo', e);
+      fallbackScanner.classList.add('hidden');
+      nativeScanner.classList.remove('hidden');
+      setStatus('Code non lu. Cadre uniquement le petit carré et reprends une photo nette.');
+    } finally {
+      if (photoInput) photoInput.value='';
+    }
   }
 
   function renderCollection(filter='all') {
-    const total=[...figIndex.values()].length, count=owned.size;
+    const total = figIndex.size, count = owned.size;
     $('collectionStats').innerHTML=`<div class="stats-top"><span>Collection</span><strong>${count} / ${total}</strong></div><div class="progress"><span style="width:${total?count/total*100:0}%"></span></div>`;
     $('seriesFilters').innerHTML=['all',...data.map(s=>s.id)].map(id=>{
       const label=id==='all'?'Toutes':data.find(s=>s.id===id)?.name;
@@ -320,20 +321,17 @@
 
   function renderHistory() {
     const rows=history.map(h=>{
-      const f=figIndex.get(h.id);
-      if(!f)return '';
+      const f=figIndex.get(h.id); if(!f)return '';
       const d=new Date(h.ts);
       return `<div class="history-item"><div class="history-avatar">${f.number}</div><div class="history-copy"><strong>${escapeHtml(f.name)}</strong><small>${escapeHtml(f.seriesName)} · ${h.code}</small></div><div class="history-time">${d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}<br>${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
     }).join('');
     $('historyList').innerHTML=rows||'<div class="empty">Aucun scan pour le moment.<br>Le premier trésor de boîte aveugle t’attend. 🧱</div>';
   }
 
-  function escapeHtml(v){
-    return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
-  }
+  function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));}
 
   document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',async()=>{
-    if (btn.dataset.view!=='scanView' && scanning) await stopScanner();
+    if (btn.dataset.view!=='scanView' && scanning) await stopScanner(false);
     document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===btn.dataset.view));
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b===btn));
     if(btn.dataset.view==='collectionView')renderCollection();
@@ -342,50 +340,19 @@
   }));
 
   startBtn.onclick=startScanner;
-  stopBtn.onclick=stopScanner;
+  stopBtn.onclick=()=>stopScanner(true);
   torchBtn.onclick=toggleTorch;
   zoom.oninput=applyZoom;
-  if (photoInput) photoInput.addEventListener('change', e=>scanPhoto(e.target.files?.[0]));
-  $('manualBtn').onclick=()=>{const v=$('manualInput').value.trim(); if(v)identify(v,'manuel');};
+  photoInput?.addEventListener('change',e=>scanPhoto(e.target.files?.[0]));
+  $('manualBtn').onclick=()=>{const v=$('manualInput').value.trim();if(v)identify(v,'manuel');};
   $('manualInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('manualBtn').click();});
   $('scanAgainBtn').onclick=()=>{$('resultCard').classList.add('hidden');startScanner();};
-  $('ownedBtn').onclick=()=>{
-    if(!currentResult)return;
-    owned.has(currentResult.id)?owned.delete(currentResult.id):owned.add(currentResult.id);
-    saveSet('brickscan-owned',owned);
-    updateOwnedButton();
-  };
-  $('copyUnknown').onclick=async()=>{
-    try{
-      await navigator.clipboard.writeText(lastRaw);
-      $('copyUnknown').textContent='Copié ✓';
-      setTimeout(()=>$('copyUnknown').textContent='Copier le code',1200);
-    }catch{}
-  };
-  $('clearCollection').onclick=()=>{
-    if(confirm('Vider toute la collection ?')){
-      owned.clear();
-      saveSet('brickscan-owned',owned);
-      renderCollection();
-    }
-  };
-  $('clearHistory').onclick=()=>{
-    history=[];
-    localStorage.setItem('brickscan-history','[]');
-    renderHistory();
-  };
+  $('ownedBtn').onclick=()=>{if(!currentResult)return;owned.has(currentResult.id)?owned.delete(currentResult.id):owned.add(currentResult.id);saveSet('brickscan-owned',owned);updateOwnedButton();};
+  $('copyUnknown').onclick=async()=>{try{await navigator.clipboard.writeText(lastRaw);$('copyUnknown').textContent='Copié ✓';setTimeout(()=>$('copyUnknown').textContent='Copier le code',1200)}catch{}};
+  $('clearCollection').onclick=()=>{if(confirm('Vider toute la collection ?')){owned.clear();saveSet('brickscan-owned',owned);renderCollection();}};
+  $('clearHistory').onclick=()=>{history=[];localStorage.setItem('brickscan-history','[]');renderHistory();};
 
-  window.addEventListener('beforeinstallprompt',e=>{
-    e.preventDefault();
-    deferredInstall=e;
-    $('installBtn').classList.remove('hidden');
-  });
-  $('installBtn').onclick=async()=>{
-    if(!deferredInstall)return;
-    deferredInstall.prompt();
-    await deferredInstall.userChoice;
-    deferredInstall=null;
-    $('installBtn').classList.add('hidden');
-  };
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').classList.remove('hidden');});
+  $('installBtn').onclick=async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('installBtn').classList.add('hidden');};
   if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
 })();
