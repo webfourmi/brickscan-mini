@@ -1,15 +1,16 @@
-const CACHE = "brickscan-mini-v1.5.0";
+const CACHE = "brickscan-mini-v1.6.0";
 const ASSETS = [
   "./",
   "index.html",
-  "styles.css?v=150",
-  "v14.css?v=150",
-  "data.js?v=150",
-  "archive-data.js?v=150",
-  "app.js?v=150",
-  "v14.js?v=150",
+  "styles.css?v=160",
+  "v14.css?v=160",
+  "data.js?v=160",
+  "archive-data.js?v=160",
+  "shrek-data.js?v=160",
+  "app.js?v=160",
+  "v14.js?v=160",
   "version.json",
-  "manifest.webmanifest?v=150",
+  "manifest.webmanifest?v=160",
   "icons/icon-192.png",
   "icons/icon-512.png"
 ];
