@@ -95,8 +95,10 @@
     }
     startBtn.disabled=true; setStatus('Ouverture de la caméra…');
     try {
-      const nativeOK = await supportsNativeDataMatrix();
-      if (nativeOK) await startNative(); else await startFallback();
+      // V1.1: sur Android, le BarcodeDetector natif peut annoncer le support
+      // Data Matrix tout en restant peu fiable sur les petits codes LEGO.
+      // On utilise donc ZXing/html5-qrcode en priorité.
+      await startFallback();
     } catch (e) {
       console.error(e); setStatus('Impossible d’ouvrir la caméra. Vérifie l’autorisation.');
       startBtn.disabled=false;
@@ -141,8 +143,23 @@
     nativeScanner.classList.add('hidden'); fallbackScanner.classList.remove('hidden');
     fallback = new Html5Qrcode('fallbackScanner'); scanning=true;
     const formats = window.Html5QrcodeSupportedFormats ? [Html5QrcodeSupportedFormats.DATA_MATRIX, Html5QrcodeSupportedFormats.QR_CODE] : undefined;
-    await fallback.start({facingMode:'environment'},{fps:12,qrbox:{width:240,height:240},aspectRatio:1.0,formatsToSupport:formats},raw=>{ if (identify(raw)) stopScanner(); },()=>{});
-    startBtn.classList.add('hidden'); stopBtn.classList.remove('hidden'); setStatus('Vise le Data Matrix…');
+    await fallback.start(
+      {facingMode:'environment'},
+      {
+        fps:20,
+        qrbox:(viewWidth, viewHeight)=>{
+          const edge=Math.floor(Math.min(viewWidth,viewHeight)*0.72);
+          return {width:edge,height:edge};
+        },
+        aspectRatio:1.0,
+        disableFlip:true,
+        formatsToSupport:formats,
+        experimentalFeatures:{useBarCodeDetectorIfSupported:false}
+      },
+      raw=>{ if (identify(raw)) stopScanner(); },
+      ()=>{}
+    );
+    startBtn.classList.add('hidden'); stopBtn.classList.remove('hidden'); setStatus('ZXing actif · vise le Data Matrix à 6–12 cm');
   }
   async function stopScanner() {
     scanning=false;
