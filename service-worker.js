@@ -1,18 +1,20 @@
-const CACHE = "brickscan-mini-v1.8.0";
+const CACHE = "brickscan-mini-v1.9.0";
 const ASSETS = [
   "./",
   "index.html",
-  "styles.css?v=180",
-  "v14.css?v=180",
-  "data.js?v=180",
-  "archive-data.js?v=180",
-  "archive-images.js?v=180",
-  "shrek-data.js?v=180",
-  "app.js?v=180",
-  "v14.js?v=180",
-  "backup.js?v=180",
+  "styles.css?v=190",
+  "v14.css?v=190",
+  "v19.css?v=190",
+  "data.js?v=190",
+  "archive-data.js?v=190",
+  "archive-images.js?v=190",
+  "shrek-data.js?v=190",
+  "app.js?v=190",
+  "v14.js?v=190",
+  "backup.js?v=190",
+  "v19.js?v=190",
   "version.json",
-  "manifest.webmanifest?v=180",
+  "manifest.webmanifest?v=190",
   "icons/icon-192.png",
   "icons/icon-512.png"
 ];
