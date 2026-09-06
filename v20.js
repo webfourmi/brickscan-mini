@@ -176,7 +176,6 @@
   }
 
   function decorateCards() {
-    const owned = ownedSet();
     const wishlist = wishlistSet();
     grid.querySelectorAll('.fig-card[data-id]').forEach(card => {
       const id = card.dataset.id;
@@ -193,7 +192,7 @@
       let qtyBadge = card.querySelector('.v20-qty-badge');
       if (qty > 1) {
         if (!qtyBadge) { qtyBadge = document.createElement('div'); qtyBadge.className = 'v20-qty-badge'; card.appendChild(qtyBadge); }
-        qtyBadge.textContent = `×${qty}`;
+        if (qtyBadge.textContent !== `×${qty}`) qtyBadge.textContent = `×${qty}`;
       } else qtyBadge?.remove();
 
       let wishBadge = card.querySelector('.v20-wish-badge');
@@ -218,7 +217,8 @@
     if (progress) progress.style.width = `${figIndex.size ? owned.size / figIndex.size * 100 : 0}%`;
     let extra = stats.querySelector('.v20-stats-extra');
     if (!extra) { extra = document.createElement('div'); extra.className = 'v20-stats-extra'; stats.appendChild(extra); }
-    extra.innerHTML = `<span>${totalCopies} exemplaire${totalCopies !== 1 ? 's' : ''}</span><span>${extras} doublon${extras !== 1 ? 's' : ''}</span><span>${wishlist.size} souhait${wishlist.size !== 1 ? 's' : ''} ★</span>`;
+    const html = `<span>${totalCopies} exemplaire${totalCopies !== 1 ? 's' : ''}</span><span>${extras} doublon${extras !== 1 ? 's' : ''}</span><span>${wishlist.size} souhait${wishlist.size !== 1 ? 's' : ''} ★</span>`;
+    if (extra.innerHTML !== html) extra.innerHTML = html;
   }
 
   function decorateResultButton() {
@@ -228,7 +228,8 @@
     const fig = nameIndex.get(document.getElementById('resultName')?.textContent?.trim());
     if (!fig) return;
     const qty = quantity(fig.id);
-    ownedBtn.textContent = qty > 0 ? `＋ Ajouter un exemplaire · ${qty} déjà` : '＋ Ajouter à ma collection';
+    const label = qty > 0 ? `＋ Ajouter un exemplaire · ${qty} déjà` : '＋ Ajouter à ma collection';
+    if (ownedBtn.textContent !== label) ownedBtn.textContent = label;
     ownedBtn.classList.add('primary');
     ownedBtn.classList.remove('secondary');
   }
@@ -290,12 +291,13 @@
     if (['brickscan-owned','brickscan-counts','brickscan-wishlist'].includes(event.key)) scheduleDecorate();
   });
 
-  const observer = new MutationObserver(scheduleDecorate);
-  observer.observe(grid, {childList:true, subtree:true});
-  const stats = document.getElementById('collectionStats');
-  if (stats) observer.observe(stats, {childList:true, subtree:true});
+  const gridObserver = new MutationObserver(scheduleDecorate);
+  gridObserver.observe(grid, {childList:true, subtree:true});
   const result = document.getElementById('resultCard');
-  if (result) observer.observe(result, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+  if (result) {
+    const resultObserver = new MutationObserver(scheduleDecorate);
+    resultObserver.observe(result, {attributes:true, attributeFilter:['class']});
+  }
 
   scheduleDecorate();
 })();
