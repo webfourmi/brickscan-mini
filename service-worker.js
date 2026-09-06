@@ -1,4 +1,4 @@
-const CACHE = "brickscan-mini-v2.0.0";
+const CACHE = "brickscan-mini-v2.0.1";
 const ASSETS = [
   "./",
   "index.html",
