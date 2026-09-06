@@ -108,14 +108,10 @@
     requestAnimationFrame(applyFilters);
   }
 
-  function submitSearch() {
-    activeQuery = normalize(searchInput.value);
-    scheduleApply();
-  }
-
   searchForm.addEventListener('submit', event => {
     event.preventDefault();
-    submitSearch();
+    activeQuery = normalize(searchInput.value);
+    scheduleApply();
     searchInput.blur();
   });
 
@@ -143,6 +139,7 @@
   window.addEventListener('storage', event => {
     if (event.key === 'brickscan-owned') scheduleApply();
   });
+  window.addEventListener('brickscan-collection-change', scheduleApply);
 
   updateClearButton();
   scheduleApply();
