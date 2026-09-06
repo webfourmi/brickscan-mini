@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
-  "build": 220,
+  "version": "2.2.1",
+  "build": 221,
   "released": "2026-09-06",
-  "notes": "Ajout des séries CMF sous licence et correction des photos de la Série 20"
+  "notes": "Audit complet des photos des séries 1 à 24 et correction de la Série 18"
 }
