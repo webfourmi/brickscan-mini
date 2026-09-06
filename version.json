@@ -1,6 +1,6 @@
 {
-  "version": "1.9.1",
-  "build": 191,
+  "version": "2.0.0",
+  "build": 200,
   "released": "2026-09-06",
-  "notes": "Recherche validée par bouton ou Entrée, avec bouton Effacer"
+  "notes": "Fiche figurine, gestion des doublons et wishlist"
 }
