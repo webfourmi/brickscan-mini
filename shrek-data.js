@@ -4,6 +4,7 @@
     name: 'Shrek 71053',
     set: '71053',
     year: 2026,
+    releaseOrder: 202609,
     scannable: false,
     manualOnly: true,
     figures: [
@@ -23,5 +24,33 @@
   };
 
   const data = Array.isArray(window.MINIFIG_DATA) ? window.MINIFIG_DATA : [];
-  window.MINIFIG_DATA = [shrek, ...data.filter(series => series.id !== 'shrek')];
+  const recentMeta = {
+    'series-25': {year:2024, releaseOrder:202401},
+    'series-26': {year:2024, releaseOrder:202405},
+    'dnd': {year:2024, releaseOrder:202409},
+    'series-27': {year:2025, releaseOrder:202501},
+    'spiderverse': {year:2025, releaseOrder:202509},
+    'series-28': {year:2026, releaseOrder:202601},
+    'series-29': {year:2026, releaseOrder:202605}
+  };
+
+  for (const series of data) {
+    const meta = recentMeta[series.id];
+    if (!meta) continue;
+    series.year = meta.year;
+    series.releaseOrder = meta.releaseOrder;
+  }
+
+  const withoutShrek = data.filter(series => series.id !== 'shrek');
+  const numbered = withoutShrek
+    .filter(series => /^series-\d+$/.test(series.id || ''))
+    .sort((a, b) => Number(b.id.split('-')[1]) - Number(a.id.split('-')[1]));
+
+  const specials = withoutShrek
+    .filter(series => !/^series-\d+$/.test(series.id || ''))
+    .sort((a, b) => (Number(b.releaseOrder) || Number(b.year) * 100 || 0) - (Number(a.releaseOrder) || Number(a.year) * 100 || 0));
+
+  // Ordre stable et lisible : Shrek, séries numérotées récentes vers anciennes,
+  // puis séries spéciales/licenciées. Aucun élément n'est supprimé pendant la fusion.
+  window.MINIFIG_DATA = [shrek, ...numbered, ...specials];
 })();
