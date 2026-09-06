@@ -8,20 +8,20 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="description" content="Scanner mobile de codes Data Matrix pour identifier les minifigurines de collection.">
-  <title>BrickScan Mini 2.2.1</title>
-  <link rel="manifest" href="manifest.webmanifest?v=221">
+  <title>BrickScan Mini 2.3</title>
+  <link rel="manifest" href="manifest.webmanifest?v=230">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=221">
-  <link rel="stylesheet" href="v14.css?v=221">
-  <link rel="stylesheet" href="v19.css?v=221">
-  <link rel="stylesheet" href="v20.css?v=221">
+  <link rel="stylesheet" href="styles.css?v=230">
+  <link rel="stylesheet" href="v14.css?v=230">
+  <link rel="stylesheet" href="v19.css?v=230">
+  <link rel="stylesheet" href="v20.css?v=230">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true">▦</div>
-      <div><h1>BrickScan Mini</h1><p>Scanner de minifigurines · v2.2.1</p></div>
+      <div><h1>BrickScan Mini</h1><p>Scanner de minifigurines · v2.3</p></div>
       <button id="installBtn" class="icon-btn hidden" title="Installer">＋</button>
     </header>
 
@@ -44,7 +44,7 @@
             <div id="scannerPlaceholder" class="placeholder"><div class="dm-icon">▦</div><strong>Caméra arrêtée</strong><small>Appuie sur « Scanner »</small></div>
           </div>
           <div id="fallbackScanner" class="fallback hidden"></div>
-          <div id="scanStatus" class="status">Prêt · v2.2.1</div>
+          <div id="scanStatus" class="status">Prêt · v2.3</div>
           <div class="actions-row">
             <button id="startBtn" class="btn primary">📷 Scanner en direct</button>
             <label for="photoInput" class="btn secondary">🖼️ Photo du code<input id="photoInput" type="file" accept="image/*" capture="environment" hidden></label>
@@ -76,7 +76,7 @@
 
       <section id="historyView" class="view"><div class="section-head"><div><div class="eyebrow">HISTORIQUE</div><h2>Derniers scans</h2></div><button id="clearHistory" class="link-btn">Effacer</button></div><div id="historyList" class="history-list"></div></section>
 
-      <section id="infoView" class="view"><div class="info-card"><div class="eyebrow">MODE D’EMPLOI</div><h2>Le bon code est le Data Matrix</h2><ol><li>Retourne la boîte.</li><li>Repère le petit carré proche du code-barres.</li><li>Vise-le à 6–12 cm, bien à plat.</li><li>Si le direct hésite, utilise « Photo du code ».</li></ol><h3>Séries incluses</h3><p>BrickScan inclut maintenant les séries numérotées 1 à 29 ainsi que les principales séries Collectable Minifigures sous licence : Team GB, La Grande Aventure LEGO, Les Simpson, Disney, équipe d’Allemagne DFB, LEGO Batman Le Film, LEGO NINJAGO Le Film, Harry Potter et Les Animaux fantastiques, DC Super Heroes, Looney Tunes, Marvel Studios, Les Muppets, Disney 100, Dungeons & Dragons, Spider-Verse et Shrek. Les anciennes séries sont gérées manuellement ; seuls les codes Data Matrix modernes vérifiés sont activés pour le scan.</p><h3>Collection</h3><p>Chaque carte ouvre une fiche figurine avec série, set, année, quantité d’exemplaires et wishlist. Les doublons sont comptés séparément et la wishlist peut être filtrée directement. Les séries historiques sous licence restent sans photo tant que leur correspondance visuelle n’est pas vérifiée.</p><h3>Mode magasin</h3><p>Le bouton 🛒 dans Scanner active une vue express pour enchaîner les boîtes. Le résultat indique immédiatement si la figurine est nouvelle, déjà possédée, dans la wishlist ou hors wishlist lorsque le filtre ciblé est actif.</p><h3>Recherche</h3><p>Recherche validée par le bouton « Rechercher » ou la touche Entrée, bouton « Effacer », filtres Toutes / Possédées / Manquantes / Wishlist et progression directement sur chaque série.</p><h3>Sauvegarde</h3><p>La sauvegarde inclut la collection, les quantités et la wishlist. Les anciennes sauvegardes restent acceptées.</p><h3>Mises à jour</h3><div class="update-card"><div><strong>Version installée : <span id="currentVersion">2.2.1</span></strong><small id="updateState">BrickScan vérifie automatiquement les nouvelles versions.</small></div><button id="checkUpdateBtn" class="btn secondary">Vérifier</button></div><h3>Confidentialité</h3><p>Le scan est effectué sur ton appareil. Ta collection et ton historique sont stockés localement dans le navigateur.</p><div class="disclaimer">Application indépendante de fan. LEGO® est une marque du groupe LEGO, qui ne sponsorise ni n’approuve cette application.</div></div></section>
+      <section id="infoView" class="view"><div class="info-card"><div class="eyebrow">MODE D’EMPLOI</div><h2>Le bon code est le Data Matrix</h2><ol><li>Retourne la boîte.</li><li>Repère le petit carré proche du code-barres.</li><li>Vise-le à 6–12 cm, bien à plat.</li><li>Si le direct hésite, utilise « Photo du code ».</li></ol><h3>Séries incluses</h3><p>BrickScan inclut maintenant les séries numérotées 1 à 29 ainsi que les principales séries Collectable Minifigures sous licence : Team GB, La Grande Aventure LEGO, Les Simpson, Disney, équipe d’Allemagne DFB, LEGO Batman Le Film, LEGO NINJAGO Le Film, Harry Potter et Les Animaux fantastiques, DC Super Heroes, Looney Tunes, Marvel Studios, Les Muppets, Disney 100, Dungeons & Dragons, Spider-Verse et Shrek. Les anciennes séries sont gérées manuellement ; seuls les codes Data Matrix modernes vérifiés sont activés pour le scan.</p><h3>Collection</h3><p>Chaque carte ouvre une fiche figurine avec série, set, année, quantité d’exemplaires et wishlist. Les doublons sont comptés séparément et la wishlist peut être filtrée directement. Les séries historiques sous licence disposent maintenant elles aussi de visuels associés par référence de catalogue.</p><h3>Mode magasin</h3><p>Le bouton 🛒 dans Scanner active une vue express pour enchaîner les boîtes. Le résultat indique immédiatement si la figurine est nouvelle, déjà possédée, dans la wishlist ou hors wishlist lorsque le filtre ciblé est actif.</p><h3>Recherche</h3><p>Recherche validée par le bouton « Rechercher » ou la touche Entrée, bouton « Effacer », filtres Toutes / Possédées / Manquantes / Wishlist et progression directement sur chaque série.</p><h3>Sauvegarde</h3><p>La sauvegarde inclut la collection, les quantités et la wishlist. Les anciennes sauvegardes restent acceptées.</p><h3>Mises à jour</h3><div class="update-card"><div><strong>Version installée : <span id="currentVersion">2.3.0</span></strong><small id="updateState">BrickScan vérifie automatiquement les nouvelles versions.</small></div><button id="checkUpdateBtn" class="btn secondary">Vérifier</button></div><h3>Confidentialité</h3><p>Le scan est effectué sur ton appareil. Ta collection et ton historique sont stockés localement dans le navigateur.</p><div class="disclaimer">Application indépendante de fan. LEGO® est une marque du groupe LEGO, qui ne sponsorise ni n’approuve cette application.</div></div></section>
     </main>
 
     <nav class="bottom-nav" aria-label="Navigation"><button data-view="scanView" class="nav-btn active"><span>▦</span><small>Scanner</small></button><button data-view="collectionView" class="nav-btn"><span>◆</span><small>Collection</small></button><button data-view="historyView" class="nav-btn"><span>◷</span><small>Historique</small></button><button data-view="infoView" class="nav-btn"><span>ⓘ</span><small>Infos</small></button></nav>
@@ -84,6 +84,6 @@
 
   <section id="figureSheet" class="figure-sheet hidden" aria-hidden="true" aria-label="Fiche figurine"><div id="figureSheetBackdrop" class="figure-sheet-backdrop"></div><div class="figure-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="figureSheetName"><div class="figure-sheet-head"><div class="eyebrow">FICHE FIGURINE</div><button id="figureSheetClose" class="figure-sheet-close" type="button" aria-label="Fermer">✕</button></div><img id="figureSheetImage" class="figure-sheet-photo hidden" alt=""><div id="figureSheetFallback" class="figure-sheet-fallback">◆</div><h2 id="figureSheetName"></h2><div id="figureSheetSeries" class="figure-sheet-series"></div><div class="figure-sheet-meta"><div><span>N°</span><strong id="figureSheetNumber">—</strong></div><div><span>Set</span><strong id="figureSheetSet">—</strong></div><div><span>Année</span><strong id="figureSheetYear">—</strong></div><div><span>Scan</span><strong id="figureSheetScan">—</strong></div></div><div class="figure-owned-box"><strong>Mes exemplaires</strong><div class="figure-qty"><button id="figureQtyMinus" type="button" aria-label="Retirer un exemplaire">−</button><strong id="figureQtyValue">0</strong><button id="figureQtyPlus" type="button" aria-label="Ajouter un exemplaire">＋</button></div><div id="figureOwnedState" class="figure-owned-state"></div></div><button id="figureWishlistBtn" class="btn secondary figure-wishlist" type="button">☆ Ajouter à ma wishlist</button><div id="figureSheetCodes" class="figure-codes"></div></div></section>
 
-  <script src="data.js?v=221"></script><script src="archive-data.js?v=221"></script><script src="archive-images.js?v=221"></script><script src="special-data.js?v=221"></script><script src="shrek-data.js?v=221"></script><script src="app.js?v=221"></script><script src="v14.js?v=221"></script><script src="backup.js?v=221"></script><script src="v19.js?v=221"></script><script src="v20.js?v=221"></script><script src="v21.js?v=221"></script><script src="v22.js?v=221"></script>
+  <script src="data.js?v=230"></script><script src="archive-data.js?v=230"></script><script src="archive-images.js?v=230"></script><script src="special-data.js?v=230"></script><script src="special-images.js?v=230"></script><script src="shrek-data.js?v=230"></script><script src="app.js?v=230"></script><script src="v14.js?v=230"></script><script src="backup.js?v=230"></script><script src="v19.js?v=230"></script><script src="v20.js?v=230"></script><script src="v21.js?v=230"></script><script src="v22.js?v=230"></script>
 </body>
 </html>
