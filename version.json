@@ -1,6 +1,6 @@
 {
-  "version": "2.6.0",
-  "build": 260,
+  "version": "2.6.1",
+  "build": 261,
   "released": "2026-09-06",
-  "notes": "Fiches d’exemplaires éditables, état Comme neuf par défaut, filtre doublons et export CSV pour échanges"
+  "notes": "Suppression du bouton Réinitialiser pour éviter l’effacement accidentel de la collection"
 }
