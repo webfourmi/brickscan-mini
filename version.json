@@ -1,6 +1,6 @@
 {
-  "version": "2.2.1",
-  "build": 221,
+  "version": "2.3.0",
+  "build": 230,
   "released": "2026-09-06",
-  "notes": "Audit complet des photos des séries 1 à 24 et correction de la Série 18"
+  "notes": "Ajout des photos vérifiées pour les séries historiques sous licence : Disney, Marvel, Looney Tunes, Simpson, Harry Potter, Muppets, Batman, NINJAGO et autres"
 }
