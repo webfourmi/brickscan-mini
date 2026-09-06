@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = '2.1.0';
+  const APP_VERSION = '2.2.0';
   const $ = id => document.getElementById(id);
   const data = window.MINIFIG_DATA || [];
   const figIndex = new Map();
@@ -21,7 +21,7 @@
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '').replace(/&/g, ' ').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase();
   }
   function photoUrl(fig) {
-    if (!fig) return '';
+    if (!fig || fig.noRemotePhoto) return '';
     if (fig.image) return fig.image;
     const n = Number(fig.seriesId?.split('-')[1]);
     if (Number.isFinite(n) && n < 25) return '';
@@ -53,18 +53,18 @@
   const observer=new MutationObserver(()=>requestAnimationFrame(decorateAll)); observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']}); decorateAll();
 
   const headerVersion=document.querySelector('.topbar p');
-  if(headerVersion) headerVersion.textContent='Scanner de minifigurines · v2.1';
+  if(headerVersion) headerVersion.textContent='Scanner de minifigurines · v2.2';
   const scanStatus=$('scanStatus');
-  if(scanStatus && /Prêt/.test(scanStatus.textContent||'')) scanStatus.textContent='Prêt · v2.1';
-  document.title='BrickScan Mini 2.1';
+  if(scanStatus && /Prêt/.test(scanStatus.textContent||'')) scanStatus.textContent='Prêt · v2.2';
+  document.title='BrickScan Mini 2.2';
 
   const updateBanner=$('updateBanner'), updateText=$('updateText'), updateBtn=$('updateBtn'), updateState=$('updateState'), checkUpdateBtn=$('checkUpdateBtn'), currentVersion=$('currentVersion');
   if(currentVersion)currentVersion.textContent=APP_VERSION;
-  let latestVersion=APP_VERSION, latestBuild=210;
+  let latestVersion=APP_VERSION, latestBuild=220;
   const parts=v=>String(v||'0').split('.').map(n=>Number(n)||0);
   function isNewer(remote,current){const a=parts(remote),b=parts(current),m=Math.max(a.length,b.length);for(let i=0;i<m;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false;}return false;}
-  async function checkForUpdate(showStatus=false){if(showStatus&&updateState)updateState.textContent='Vérification…';try{const r=await fetch(`version.json?t=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status}`);const info=await r.json();latestVersion=info.version||APP_VERSION;latestBuild=info.build||210;if(isNewer(latestVersion,APP_VERSION)){if(updateText)updateText.textContent=`Version ${latestVersion} disponible${info.notes?' · '+info.notes:''}`;updateBanner?.classList.remove('hidden');if(updateState)updateState.textContent=`Nouvelle version ${latestVersion} disponible`;return true;}updateBanner?.classList.add('hidden');if(updateState)updateState.textContent=`BrickScan est à jour · v${APP_VERSION}`;return false;}catch(e){console.warn(e);if(showStatus&&updateState)updateState.textContent='Vérification impossible hors ligne';return false;}}
+  async function checkForUpdate(showStatus=false){if(showStatus&&updateState)updateState.textContent='Vérification…';try{const r=await fetch(`version.json?t=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status}`);const info=await r.json();latestVersion=info.version||APP_VERSION;latestBuild=info.build||220;if(isNewer(latestVersion,APP_VERSION)){if(updateText)updateText.textContent=`Version ${latestVersion} disponible${info.notes?' · '+info.notes:''}`;updateBanner?.classList.remove('hidden');if(updateState)updateState.textContent=`Nouvelle version ${latestVersion} disponible`;return true;}updateBanner?.classList.add('hidden');if(updateState)updateState.textContent=`BrickScan est à jour · v${APP_VERSION}`;return false;}catch(e){console.warn(e);if(showStatus&&updateState)updateState.textContent='Vérification impossible hors ligne';return false;}}
   async function applyUpdate(){if(updateBtn){updateBtn.disabled=true;updateBtn.textContent='Mise à jour…';}if(updateState)updateState.textContent='Installation de la nouvelle version…';try{let reloaded=false;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.getRegistration();if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloaded)return;reloaded=true;location.replace(`${location.pathname}?v=${latestBuild||Date.now()}`);},{once:true});}}if('caches'in window){const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('brickscan-mini-')).map(k=>caches.delete(k)));}setTimeout(()=>{if(!reloaded)location.replace(`${location.pathname}?v=${latestBuild||Date.now()}`);},700);}catch(e){console.error(e);if(updateState)updateState.textContent='Échec de la mise à jour. Réessaie avec Internet.';if(updateBtn){updateBtn.disabled=false;updateBtn.textContent='Mettre à jour';}}}
   updateBtn?.addEventListener('click',applyUpdate);checkUpdateBtn?.addEventListener('click',()=>checkForUpdate(true));window.addEventListener('online',()=>checkForUpdate(false));setTimeout(()=>checkForUpdate(false),1200);
-  const infoCard=document.querySelector('#infoView .info-card');if(infoCard&&!infoCard.querySelector('.image-credit')){const credit=document.createElement('div');credit.className='image-credit';credit.innerHTML='Photos des séries 1 à 24 chargées depuis BrickLink ; séries récentes depuis L-Scan et Shrek depuis BrickLink. Les marques et visuels LEGO restent la propriété de leurs ayants droit.';infoCard.appendChild(credit);}
+  const infoCard=document.querySelector('#infoView .info-card');if(infoCard&&!infoCard.querySelector('.image-credit')){const credit=document.createElement('div');credit.className='image-credit';credit.innerHTML='Photos des séries 1 à 24 chargées depuis BrickLink ; séries récentes depuis L-Scan et Shrek depuis BrickLink. Les séries historiques sous licence sans photo vérifiée restent volontairement sans visuel. Les marques et visuels LEGO restent la propriété de leurs ayants droit.';infoCard.appendChild(credit);}
 })();
