@@ -1,4 +1,4 @@
-const CACHE = "brickscan-mini-v2.6.0";
+const CACHE = "brickscan-mini-v2.6.1";
 const ASSETS = [
   "./",
   "index.html",
@@ -18,7 +18,7 @@ const ASSETS = [
   "v19.js?v=260",
   "v20.js?v=230",
   "v21.js?v=230",
-  "v22.js?v=260",
+  "v22.js?v=261",
   "v24.js?v=260",
   "version.json",
   "manifest.webmanifest?v=230",
