@@ -113,7 +113,7 @@
 
   const observer = new MutationObserver(scheduleApply);
   observer.observe(seriesFilters, {childList:true, subtree:true});
-  observer.observe(grid, {childList:true, subtree:true, attributes:true, attributeFilter:['class']});
+  observer.observe(grid, {childList:true, subtree:true});
 
   window.addEventListener('storage', event => {
     if (event.key === 'brickscan-owned') scheduleApply();
