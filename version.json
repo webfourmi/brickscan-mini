@@ -1,6 +1,6 @@
 {
-  "version": "2.4.0",
-  "build": 240,
+  "version": "2.5.1",
+  "build": 251,
   "released": "2026-09-06",
-  "notes": "Notes sur les figurines possédées : état, accessoires manquants et remarques, incluses dans les sauvegardes"
+  "notes": "Correction du changement d’état dans les fiches d’exemplaires"
 }
