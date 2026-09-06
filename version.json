@@ -1,6 +1,6 @@
 {
-  "version": "1.9.0",
-  "build": 190,
+  "version": "1.9.1",
+  "build": 191,
   "released": "2026-09-06",
-  "notes": "Recherche collection, filtres Possédées/Manquantes et progression par série"
+  "notes": "Recherche validée par bouton ou Entrée, avec bouton Effacer"
 }
