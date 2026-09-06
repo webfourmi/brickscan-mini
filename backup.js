@@ -38,7 +38,7 @@
     const payload = {
       format: 'brickscan-mini-collection',
       formatVersion: 1,
-      appVersion: '1.9.0',
+      appVersion: '1.9.1',
       exportedAt: new Date().toISOString(),
       count: owned.length,
       owned
