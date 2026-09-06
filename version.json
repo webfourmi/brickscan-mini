@@ -1,6 +1,6 @@
 {
-  "version": "2.0.2",
-  "build": 202,
+  "version": "2.1.0",
+  "build": 210,
   "released": "2026-09-06",
-  "notes": "Filtre Wishlist dans la collection avec compteur de souhaits"
+  "notes": "Mode magasin pour scanner rapidement avec statuts collection et wishlist"
 }
