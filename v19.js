@@ -23,14 +23,29 @@
   let activeQuery = '';
   let scheduled = false;
 
-  function ownedSet() {
+  function ensureWishlistFilter() {
+    let button = ownershipFilters.querySelector('button[data-owned-filter="wishlist"]');
+    if (!button) {
+      button = document.createElement('button');
+      button.className = 'ownership-chip';
+      button.dataset.ownedFilter = 'wishlist';
+      button.textContent = '★ Wishlist';
+      ownershipFilters.appendChild(button);
+    }
+    return button;
+  }
+
+  function readSet(key) {
     try {
-      const raw = JSON.parse(localStorage.getItem('brickscan-owned') || '[]');
+      const raw = JSON.parse(localStorage.getItem(key) || '[]');
       return new Set(Array.isArray(raw) ? raw : []);
     } catch (_) {
       return new Set();
     }
   }
+
+  function ownedSet() { return readSet('brickscan-owned'); }
+  function wishlistSet() { return readSet('brickscan-wishlist'); }
 
   function normalize(value) {
     return String(value || '')
@@ -76,27 +91,49 @@
     });
   }
 
+  function decorateOwnershipFilters(wishlist) {
+    const wishlistButton = ensureWishlistFilter();
+    const count = [...wishlist].filter(id => figIndex.has(id)).length;
+    wishlistButton.textContent = `★ Wishlist · ${count}`;
+    ownershipFilters.querySelectorAll('button[data-owned-filter]').forEach(button => {
+      button.classList.toggle('active', button.dataset.ownedFilter === ownershipMode);
+    });
+  }
+
   function applyFilters() {
     scheduled = false;
     const owned = ownedSet();
+    const wishlist = wishlistSet();
     let shown = 0;
     let rendered = 0;
 
     grid.querySelectorAll('.fig-card[data-id]').forEach(card => {
       rendered += 1;
-      const fig = figIndex.get(card.dataset.id);
-      const isOwned = owned.has(card.dataset.id);
-      const modeOk = ownershipMode === 'all' || (ownershipMode === 'owned' && isOwned) || (ownershipMode === 'missing' && !isOwned);
+      const id = card.dataset.id;
+      const fig = figIndex.get(id);
+      const isOwned = owned.has(id);
+      const isWished = wishlist.has(id);
+      const modeOk = ownershipMode === 'all'
+        || (ownershipMode === 'owned' && isOwned)
+        || (ownershipMode === 'missing' && !isOwned)
+        || (ownershipMode === 'wishlist' && isWished);
       const show = modeOk && matchesSearch(fig, activeQuery);
       card.classList.toggle('v19-hidden', !show);
       if (show) shown += 1;
     });
 
     decorateSeriesFilters(owned);
+    decorateOwnershipFilters(wishlist);
     updateClearButton();
 
     if (visibleCount) {
-      const modeLabel = ownershipMode === 'owned' ? 'possédée(s)' : ownershipMode === 'missing' ? 'manquante(s)' : 'figurine(s)';
+      const modeLabel = ownershipMode === 'owned'
+        ? 'possédée(s)'
+        : ownershipMode === 'missing'
+          ? 'manquante(s)'
+          : ownershipMode === 'wishlist'
+            ? 'dans la wishlist'
+            : 'figurine(s)';
       visibleCount.textContent = `${shown} ${modeLabel}${activeQuery ? ` · recherche « ${searchInput.value.trim()} »` : ''}`;
     }
     if (empty) empty.classList.toggle('hidden', !(rendered > 0 && shown === 0));
@@ -124,12 +161,12 @@
     searchInput.focus();
   });
 
-  ownershipFilters.querySelectorAll('button[data-owned-filter]').forEach(button => {
-    button.addEventListener('click', () => {
-      ownershipMode = button.dataset.ownedFilter || 'all';
-      ownershipFilters.querySelectorAll('button[data-owned-filter]').forEach(other => other.classList.toggle('active', other === button));
-      scheduleApply();
-    });
+  ensureWishlistFilter();
+  ownershipFilters.addEventListener('click', event => {
+    const button = event.target.closest('button[data-owned-filter]');
+    if (!button) return;
+    ownershipMode = button.dataset.ownedFilter || 'all';
+    scheduleApply();
   });
 
   const observer = new MutationObserver(scheduleApply);
@@ -137,7 +174,7 @@
   observer.observe(grid, {childList:true, subtree:true});
 
   window.addEventListener('storage', event => {
-    if (event.key === 'brickscan-owned') scheduleApply();
+    if (event.key === 'brickscan-owned' || event.key === 'brickscan-wishlist') scheduleApply();
   });
   window.addEventListener('brickscan-collection-change', scheduleApply);
 
