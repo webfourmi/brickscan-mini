@@ -8,19 +8,19 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="description" content="Scanner mobile de codes Data Matrix pour identifier les minifigurines de collection.">
-  <title>BrickScan Mini 1.9</title>
-  <link rel="manifest" href="manifest.webmanifest?v=190">
+  <title>BrickScan Mini 1.9.1</title>
+  <link rel="manifest" href="manifest.webmanifest?v=191">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=190">
-  <link rel="stylesheet" href="v14.css?v=190">
-  <link rel="stylesheet" href="v19.css?v=190">
+  <link rel="stylesheet" href="styles.css?v=191">
+  <link rel="stylesheet" href="v14.css?v=191">
+  <link rel="stylesheet" href="v19.css?v=191">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true">▦</div>
-      <div><h1>BrickScan Mini</h1><p>Scanner de minifigurines · v1.9</p></div>
+      <div><h1>BrickScan Mini</h1><p>Scanner de minifigurines · v1.9.1</p></div>
       <button id="installBtn" class="icon-btn hidden" title="Installer">＋</button>
     </header>
 
@@ -46,7 +46,7 @@
             </div>
           </div>
           <div id="fallbackScanner" class="fallback hidden"></div>
-          <div id="scanStatus" class="status">Prêt · v1.9</div>
+          <div id="scanStatus" class="status">Prêt · v1.9.1</div>
           <div class="actions-row">
             <button id="startBtn" class="btn primary">📷 Scanner en direct</button>
             <label for="photoInput" class="btn secondary">🖼️ Photo du code<input id="photoInput" type="file" accept="image/*" capture="environment" hidden></label>
@@ -90,7 +90,11 @@
         </div>
 
         <div class="collection-tools">
-          <label class="collection-search-wrap" for="collectionSearch"><span aria-hidden="true">🔎</span><input id="collectionSearch" class="collection-search" type="search" autocomplete="off" placeholder="Rechercher une figurine, série ou set"></label>
+          <form id="collectionSearchForm" class="collection-search-form" role="search">
+            <label class="collection-search-wrap" for="collectionSearch"><span aria-hidden="true">🔎</span><input id="collectionSearch" class="collection-search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Rechercher une figurine, série ou set"></label>
+            <button id="collectionSearchBtn" class="btn primary collection-search-btn" type="submit">🔎 Rechercher</button>
+            <button id="collectionSearchClear" class="btn secondary collection-search-clear" type="button" disabled>✕ Effacer</button>
+          </form>
           <div id="ownershipFilters" class="ownership-filters" aria-label="Filtrer la collection">
             <button class="ownership-chip active" data-owned-filter="all">Toutes</button>
             <button class="ownership-chip" data-owned-filter="owned">✓ Possédées</button>
@@ -115,12 +119,12 @@
           <div class="eyebrow">MODE D’EMPLOI</div><h2>Le bon code est le Data Matrix</h2>
           <ol><li>Retourne la boîte.</li><li>Repère le petit carré proche du code-barres.</li><li>Vise-le à 6–12 cm, bien à plat.</li><li>Si le direct hésite, utilise « Photo du code ».</li></ol>
           <h3>Séries incluses</h3><p>Shrek 71053 apparaît en premier dans la collection, avec ses 12 personnages et leurs photos. Son scan reste volontairement désactivé tant que les codes de production ne sont pas assez vérifiés. Toutes les séries numérotées 1 à 29 sont disponibles ; les séries 25 à 29 sont scannables, les séries 1 à 24 sont gérées manuellement. Dungeons & Dragons et Spider-Verse sont également incluses.</p>
-          <h3>Collection</h3><p>Recherche instantanée, filtres Toutes / Possédées / Manquantes et progression directement sur chaque série. Une série complète reçoit un ✓.</p>
+          <h3>Collection</h3><p>Recherche validée par le bouton « Rechercher » ou la touche Entrée, bouton « Effacer », filtres Toutes / Possédées / Manquantes et progression directement sur chaque série. Une série complète reçoit un ✓.</p>
           <h3>Photos</h3><p>Les séries 1 à 24 disposent de visuels dans la collection. Les séries récentes et Shrek conservent leurs visuels existants.</p>
           <h3>Sauvegarde</h3><p>La collection peut être exportée dans un fichier JSON puis restaurée sur ce téléphone ou un autre appareil. La restauration remplace uniquement la liste des figurines cochées.</p>
           <h3>Mises à jour</h3>
           <div class="update-card">
-            <div><strong>Version installée : <span id="currentVersion">1.9.0</span></strong><small id="updateState">BrickScan vérifie automatiquement les nouvelles versions.</small></div>
+            <div><strong>Version installée : <span id="currentVersion">1.9.1</span></strong><small id="updateState">BrickScan vérifie automatiquement les nouvelles versions.</small></div>
             <button id="checkUpdateBtn" class="btn secondary">Vérifier</button>
           </div>
           <h3>Confidentialité</h3><p>Le scan est effectué sur ton appareil. Ta collection et ton historique sont stockés localement dans le navigateur.</p>
@@ -136,13 +140,13 @@
       <button data-view="infoView" class="nav-btn"><span>ⓘ</span><small>Infos</small></button>
     </nav>
   </div>
-  <script src="data.js?v=190"></script>
-  <script src="archive-data.js?v=190"></script>
-  <script src="archive-images.js?v=190"></script>
-  <script src="shrek-data.js?v=190"></script>
-  <script src="app.js?v=190"></script>
-  <script src="v14.js?v=190"></script>
-  <script src="backup.js?v=190"></script>
-  <script src="v19.js?v=190"></script>
+  <script src="data.js?v=191"></script>
+  <script src="archive-data.js?v=191"></script>
+  <script src="archive-images.js?v=191"></script>
+  <script src="shrek-data.js?v=191"></script>
+  <script src="app.js?v=191"></script>
+  <script src="v14.js?v=191"></script>
+  <script src="backup.js?v=191"></script>
+  <script src="v19.js?v=191"></script>
 </body>
 </html>
