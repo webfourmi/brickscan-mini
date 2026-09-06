@@ -1,6 +1,6 @@
 {
-  "version": "2.3.0",
-  "build": 230,
+  "version": "2.4.0",
+  "build": 240,
   "released": "2026-09-06",
-  "notes": "Ajout des photos vérifiées pour les séries historiques sous licence : Disney, Marvel, Looney Tunes, Simpson, Harry Potter, Muppets, Batman, NINJAGO et autres"
+  "notes": "Notes sur les figurines possédées : état, accessoires manquants et remarques, incluses dans les sauvegardes"
 }
