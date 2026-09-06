@@ -1,7 +1,15 @@
 (() => {
   const data = Array.isArray(window.MINIFIG_DATA) ? window.MINIFIG_DATA : [];
 
+  // Audit complet Série 1 à 24 contre les références BrickLink colNN-X.
+  // Séries 1-17, 19, 21 et 22 : l'ordre interne correspond déjà à BrickLink.
+  // Séries 18, 20, 23 et 24 : ordre interne différent, donc mapping explicite.
   const overrides = {
+    'series-18': {
+      15: 16, // Birthday Party Boy
+      16: 17, // Unicorn Guy
+      17: 15  // Cowboy Costume Guy
+    },
     'series-20': {
       1: 15, // Pajama Girl
       2: 1,  // Pinata Boy
@@ -59,8 +67,10 @@
     const prefix = String(n).padStart(2, '0');
     for (const fig of series.figures || []) {
       const bricklinkIndex = overrides[series.id]?.[fig.number] || fig.number;
-      fig.image = `https://img.bricklink.com/ItemImage/SN/0/col${prefix}-${bricklinkIndex}.png`;
+      const catalogId = `col${prefix}-${bricklinkIndex}`;
+      fig.image = `https://img.bricklink.com/ItemImage/SN/0/${catalogId}.png`;
       fig.imageSource = 'BrickLink';
+      fig.imageCatalogId = catalogId;
     }
   }
 })();
