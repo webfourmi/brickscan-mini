@@ -9,15 +9,18 @@
     }
   }
 
+  const searchForm = document.getElementById('collectionSearchForm');
   const searchInput = document.getElementById('collectionSearch');
+  const searchClear = document.getElementById('collectionSearchClear');
   const ownershipFilters = document.getElementById('ownershipFilters');
   const visibleCount = document.getElementById('collectionVisibleCount');
   const seriesFilters = document.getElementById('seriesFilters');
   const grid = document.getElementById('collectionGrid');
   const empty = document.getElementById('collectionFilterEmpty');
-  if (!searchInput || !ownershipFilters || !seriesFilters || !grid) return;
+  if (!searchForm || !searchInput || !searchClear || !ownershipFilters || !seriesFilters || !grid) return;
 
   let ownershipMode = 'all';
+  let activeQuery = '';
   let scheduled = false;
 
   function ownedSet() {
@@ -49,6 +52,10 @@
     return haystack.includes(query);
   }
 
+  function updateClearButton() {
+    searchClear.disabled = !searchInput.value && !activeQuery;
+  }
+
   function decorateSeriesFilters(owned) {
     seriesFilters.querySelectorAll('button[data-filter]').forEach(button => {
       const id = button.dataset.filter;
@@ -72,7 +79,6 @@
   function applyFilters() {
     scheduled = false;
     const owned = ownedSet();
-    const query = normalize(searchInput.value);
     let shown = 0;
     let rendered = 0;
 
@@ -81,16 +87,17 @@
       const fig = figIndex.get(card.dataset.id);
       const isOwned = owned.has(card.dataset.id);
       const modeOk = ownershipMode === 'all' || (ownershipMode === 'owned' && isOwned) || (ownershipMode === 'missing' && !isOwned);
-      const show = modeOk && matchesSearch(fig, query);
+      const show = modeOk && matchesSearch(fig, activeQuery);
       card.classList.toggle('v19-hidden', !show);
       if (show) shown += 1;
     });
 
     decorateSeriesFilters(owned);
+    updateClearButton();
 
     if (visibleCount) {
       const modeLabel = ownershipMode === 'owned' ? 'possédée(s)' : ownershipMode === 'missing' ? 'manquante(s)' : 'figurine(s)';
-      visibleCount.textContent = `${shown} ${modeLabel}${query ? ' trouvée(s)' : ''}`;
+      visibleCount.textContent = `${shown} ${modeLabel}${activeQuery ? ` · recherche « ${searchInput.value.trim()} »` : ''}`;
     }
     if (empty) empty.classList.toggle('hidden', !(rendered > 0 && shown === 0));
   }
@@ -101,7 +108,25 @@
     requestAnimationFrame(applyFilters);
   }
 
-  searchInput.addEventListener('input', scheduleApply);
+  function submitSearch() {
+    activeQuery = normalize(searchInput.value);
+    scheduleApply();
+  }
+
+  searchForm.addEventListener('submit', event => {
+    event.preventDefault();
+    submitSearch();
+    searchInput.blur();
+  });
+
+  searchInput.addEventListener('input', updateClearButton);
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    activeQuery = '';
+    scheduleApply();
+    searchInput.focus();
+  });
 
   ownershipFilters.querySelectorAll('button[data-owned-filter]').forEach(button => {
     button.addEventListener('click', () => {
@@ -119,5 +144,6 @@
     if (event.key === 'brickscan-owned') scheduleApply();
   });
 
+  updateClearButton();
   scheduleApply();
 })();
