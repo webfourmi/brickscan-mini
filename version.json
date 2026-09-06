@@ -1,6 +1,6 @@
 {
-  "version": "2.0.1",
-  "build": 201,
+  "version": "2.0.2",
+  "build": 202,
   "released": "2026-09-06",
-  "notes": "Sauvegarde compacte en haut de Collection et sauvegarde automatique locale"
+  "notes": "Filtre Wishlist dans la collection avec compteur de souhaits"
 }
