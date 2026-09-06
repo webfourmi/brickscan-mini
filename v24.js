@@ -1,9 +1,14 @@
 (() => {
+  const APP_VERSION = '2.4.0';
+  const NOTES_KEY = 'brickscan-notes';
+  const AUTO_KEY = 'brickscan-autobackup-v24';
   const data = Array.isArray(window.MINIFIG_DATA) ? window.MINIFIG_DATA : [];
+  const validIds = new Set();
   const figureBySheetKey = new Map();
 
   for (const series of data) {
     for (const fig of series.figures || []) {
+      validIds.add(fig.id);
       figureBySheetKey.set(`${series.name}::${fig.name}`, fig.id);
     }
   }
@@ -14,28 +19,26 @@
   const grid = document.getElementById('collectionGrid');
   if (!sheet || !panel || !wishlistBtn || !grid) return;
 
-  const NOTES_KEY = 'brickscan-notes';
   let currentId = null;
   let saveTimer = null;
+  let autoTimer = null;
   let decorating = false;
+
+  function loadArray(key) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(value) ? value : [];
+    } catch (_) { return []; }
+  }
 
   function loadObject(key) {
     try {
       const value = JSON.parse(localStorage.getItem(key) || '{}');
       return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-    } catch (_) {
-      return {};
-    }
+    } catch (_) { return {}; }
   }
 
-  function ownedSet() {
-    try {
-      const value = JSON.parse(localStorage.getItem('brickscan-owned') || '[]');
-      return new Set(Array.isArray(value) ? value : []);
-    } catch (_) {
-      return new Set();
-    }
-  }
+  function ownedSet() { return new Set(loadArray('brickscan-owned')); }
 
   function getCurrentId() {
     const name = document.getElementById('figureSheetName')?.textContent?.trim() || '';
@@ -49,6 +52,22 @@
       String(note.missing || '').trim() ||
       String(note.text || '').trim()
     ));
+  }
+
+  function sanitizeNotes(input) {
+    const out = {};
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return out;
+    for (const [id, raw] of Object.entries(input)) {
+      if (!validIds.has(id) || !raw || typeof raw !== 'object') continue;
+      const entry = {
+        condition: String(raw.condition || '').slice(0, 40),
+        missing: String(raw.missing || '').slice(0, 500),
+        text: String(raw.text || '').slice(0, 3000),
+        updatedAt: raw.updatedAt || new Date().toISOString()
+      };
+      if (hasNote(entry)) out[id] = entry;
+    }
+    return out;
   }
 
   function injectUi() {
@@ -108,9 +127,7 @@
     });
   }
 
-  function readNote(id) {
-    return loadObject(NOTES_KEY)[id] || {};
-  }
+  function readNote(id) { return loadObject(NOTES_KEY)[id] || {}; }
 
   function renderEditor() {
     currentId = getCurrentId();
@@ -157,6 +174,7 @@
     if (saved) saved.textContent = 'Enregistré ✓';
     window.dispatchEvent(new CustomEvent('brickscan-notes-change', {detail:{id:currentId}}));
     decorateCards();
+    scheduleAutoBackup();
   }
 
   function decorateCards() {
@@ -176,20 +194,122 @@
             badge.title = 'Notes enregistrées';
             card.appendChild(badge);
           }
-        } else {
-          badge?.remove();
-        }
+        } else badge?.remove();
       });
-    } finally {
-      decorating = false;
+    } finally { decorating = false; }
+  }
+
+  function buildBackupPayload(automatic=false) {
+    return {
+      format: 'brickscan-mini-collection',
+      formatVersion: 3,
+      appVersion: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      automatic,
+      collection: {
+        owned: loadArray('brickscan-owned'),
+        counts: loadObject('brickscan-counts'),
+        wishlist: loadArray('brickscan-wishlist'),
+        notes: sanitizeNotes(loadObject(NOTES_KEY))
+      }
+    };
+  }
+
+  function scheduleAutoBackup() {
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => {
+      try { localStorage.setItem(AUTO_KEY, JSON.stringify(buildBackupPayload(true))); } catch (_) {}
+    }, 350);
+  }
+
+  function exportBackup() {
+    const payload = buildBackupPayload(false);
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    a.href = url;
+    a.download = `brickscan-collection-${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const status = document.getElementById('backupStatus');
+    if (status) status.textContent = `Export V2.4 créé · ${Object.keys(payload.collection.notes).length} fiche(s) avec notes.`;
+  }
+
+  function applyParsedBackup(parsed, label='ce fichier') {
+    const collection = parsed?.collection && typeof parsed.collection === 'object' ? parsed.collection : null;
+    const legacyOwned = Array.isArray(parsed) ? parsed : parsed?.owned;
+    const owned = Array.isArray(collection?.owned) ? collection.owned : (Array.isArray(legacyOwned) ? legacyOwned : null);
+    if (!owned) throw new Error('Format de sauvegarde non reconnu');
+
+    const cleanOwned = [...new Set(owned.filter(id => validIds.has(id)))];
+    const counts = collection?.counts && typeof collection.counts === 'object' ? collection.counts : {};
+    const wishlist = Array.isArray(collection?.wishlist) ? collection.wishlist.filter(id => validIds.has(id)) : [];
+    const notes = sanitizeNotes(collection?.notes || {});
+
+    if (!confirm(`Restaurer la collection depuis ${label} ?\n\n${cleanOwned.length} figurine(s), ${wishlist.length} souhait(s) et ${Object.keys(notes).length} fiche(s) avec notes seront restaurés.`)) return;
+
+    localStorage.setItem('brickscan-owned', JSON.stringify(cleanOwned));
+    localStorage.setItem('brickscan-counts', JSON.stringify(counts));
+    localStorage.setItem('brickscan-wishlist', JSON.stringify(wishlist));
+    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    localStorage.setItem(AUTO_KEY, JSON.stringify(buildBackupPayload(true)));
+    location.reload();
+  }
+
+  async function restoreFile(file) {
+    if (!file) return;
+    const text = await file.text();
+    applyParsedBackup(JSON.parse(text), 'ce fichier');
+  }
+
+  function restoreAuto() {
+    const raw = localStorage.getItem(AUTO_KEY) || localStorage.getItem('brickscan-autobackup-v2');
+    if (!raw) {
+      const status = document.getElementById('backupStatus');
+      if (status) status.textContent = 'Aucune sauvegarde automatique disponible.';
+      return;
     }
+    applyParsedBackup(JSON.parse(raw), 'la sauvegarde automatique');
+  }
+
+  function installBackupOverrides() {
+    document.addEventListener('click', event => {
+      const exportBtn = event.target.closest('#backupCollectionBtn');
+      if (exportBtn) {
+        event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
+        exportBackup(); return;
+      }
+      const restoreBtn = event.target.closest('#restoreCollectionBtn');
+      if (restoreBtn) {
+        event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
+        document.getElementById('restoreCollectionInput')?.click(); return;
+      }
+      const autoBtn = event.target.closest('#restoreAutoBackupBtn');
+      if (autoBtn) {
+        event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
+        restoreAuto();
+      }
+    }, true);
+
+    document.addEventListener('change', event => {
+      if (event.target?.id !== 'restoreCollectionInput') return;
+      event.stopPropagation(); event.stopImmediatePropagation();
+      restoreFile(event.target.files?.[0]).catch(error => {
+        const status = document.getElementById('backupStatus');
+        if (status) status.textContent = `Restauration impossible · ${error.message || 'fichier invalide'}`;
+      }).finally(() => { event.target.value = ''; });
+    }, true);
   }
 
   injectUi();
+  installBackupOverrides();
 
   const sheetObserver = new MutationObserver(() => {
-    if (sheet.classList.contains('hidden')) return;
-    requestAnimationFrame(renderEditor);
+    if (!sheet.classList.contains('hidden')) requestAnimationFrame(renderEditor);
   });
   sheetObserver.observe(sheet, {attributes:true, attributeFilter:['class'], childList:true, subtree:true});
 
@@ -197,15 +317,15 @@
   gridObserver.observe(grid, {childList:true, subtree:true});
 
   window.addEventListener('brickscan-collection-change', () => {
-    renderEditor();
-    decorateCards();
+    renderEditor(); decorateCards(); scheduleAutoBackup();
   });
+  window.addEventListener('brickscan-notes-change', scheduleAutoBackup);
   window.addEventListener('storage', event => {
-    if (event.key === NOTES_KEY || event.key === 'brickscan-owned') {
-      renderEditor();
-      decorateCards();
+    if ([NOTES_KEY,'brickscan-owned','brickscan-counts','brickscan-wishlist'].includes(event.key)) {
+      renderEditor(); decorateCards(); scheduleAutoBackup();
     }
   });
 
   decorateCards();
+  scheduleAutoBackup();
 })();
