@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = '2.2.1';
+  const APP_VERSION = '2.3.0';
   const AUTO_KEY = 'brickscan-autobackup-v2';
   const AUTO_PREV_KEY = 'brickscan-autobackup-prev-v2';
   const $ = id => document.getElementById(id);
