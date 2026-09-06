@@ -1,6 +1,6 @@
 {
-  "version": "2.6.2",
-  "build": 262,
+  "version": "2.7.0",
+  "build": 270,
   "released": "2026-09-06",
-  "notes": "Restauration des séries 25 à 29 et Shrek, ordre du catalogue stabilisé et cache des données renouvelé"
+  "notes": "Nouveau moteur de scan Data Matrix double moteur : BarcodeDetector natif + secours ZXing avec recadrage central agrandi"
 }
