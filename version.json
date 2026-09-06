@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "build": 200,
+  "version": "2.0.1",
+  "build": 201,
   "released": "2026-09-06",
-  "notes": "Fiche figurine, gestion des doublons et wishlist"
+  "notes": "Sauvegarde compacte en haut de Collection et sauvegarde automatique locale"
 }
