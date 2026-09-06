@@ -2,6 +2,24 @@
   const data = Array.isArray(window.MINIFIG_DATA) ? window.MINIFIG_DATA : [];
 
   const overrides = {
+    'series-20': {
+      1: 15, // Pajama Girl
+      2: 1,  // Pinata Boy
+      3: 3,  // Peapod Costume Girl
+      4: 12, // Sea Rescuer
+      5: 5,  // Pirate Girl
+      6: 10, // Martial Arts Boy
+      7: 2,  // Breakdancer
+      8: 9,  // Super Warrior
+      9: 13, // Brick Costume Guy
+      10: 7, // Llama Costume Girl
+      11: 6, // Space Fan
+      12: 11,// Athlete
+      13: 4, // Tournament Knight
+      14: 14,// 80s Musician
+      15: 16,// Drone Boy
+      16: 8  // Viking
+    },
     'series-23': {
       1: 6,  // Cardboard Robot
       2: 5,  // Holiday Elf
