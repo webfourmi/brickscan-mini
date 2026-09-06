@@ -37,14 +37,11 @@
           <h2>Vise le petit carré sous la boîte</h2>
           <p>Data Matrix ou QR. Couvre le grand code-barres avec un doigt si le téléphone accroche dessus.</p>
         </div>
-
         <div class="scanner-card">
           <div id="nativeScanner" class="scanner-stage">
             <video id="video" autoplay playsinline muted></video>
             <div class="scan-mask"><div class="scan-box"><span></span></div></div>
-            <div id="scannerPlaceholder" class="placeholder">
-              <div class="dm-icon">▦</div><strong>Caméra arrêtée</strong><small>Appuie sur « Scanner »</small>
-            </div>
+            <div id="scannerPlaceholder" class="placeholder"><div class="dm-icon">▦</div><strong>Caméra arrêtée</strong><small>Appuie sur « Scanner »</small></div>
           </div>
           <div id="fallbackScanner" class="fallback hidden"></div>
           <div id="scanStatus" class="status">Prêt · v2.2</div>
@@ -58,125 +55,35 @@
         </div>
 
         <section id="resultCard" class="result-card hidden" aria-live="polite">
-          <div class="result-badge">IDENTIFIÉE</div>
-          <div class="fig-avatar" id="resultAvatar">1</div>
-          <h2 id="resultName"></h2>
-          <div id="resultSeries" class="series-pill"></div>
+          <div class="result-badge">IDENTIFIÉE</div><div class="fig-avatar" id="resultAvatar">1</div><h2 id="resultName"></h2><div id="resultSeries" class="series-pill"></div>
           <div class="meta-grid"><div><span>Code</span><strong id="resultCode"></strong></div><div><span>Usine</span><strong id="resultFactory">—</strong></div></div>
-          <button id="ownedBtn" class="btn primary full">＋ Ajouter à ma collection</button>
-          <button id="scanAgainBtn" class="btn ghost full">Scanner une autre boîte</button>
+          <button id="ownedBtn" class="btn primary full">＋ Ajouter à ma collection</button><button id="scanAgainBtn" class="btn ghost full">Scanner une autre boîte</button>
         </section>
-
-        <section id="unknownCard" class="unknown-card hidden">
-          <h3>Code lu, mais inconnu</h3><p id="unknownText"></p><button id="copyUnknown" class="btn secondary">Copier le code</button>
-        </section>
-
-        <details class="manual-card">
-          <summary>⌨️ Saisie manuelle</summary>
-          <p>Entre l’identifiant à 7 chiffres contenu dans le Data Matrix, ou colle toute la chaîne décodée.</p>
-          <div class="manual-row"><input id="manualInput" inputmode="numeric" placeholder="ex. 6522981 ou chaîne complète"><button id="manualBtn" class="btn secondary">Identifier</button></div>
-        </details>
+        <section id="unknownCard" class="unknown-card hidden"><h3>Code lu, mais inconnu</h3><p id="unknownText"></p><button id="copyUnknown" class="btn secondary">Copier le code</button></section>
+        <details class="manual-card"><summary>⌨️ Saisie manuelle</summary><p>Entre l’identifiant à 7 chiffres contenu dans le Data Matrix, ou colle toute la chaîne décodée.</p><div class="manual-row"><input id="manualInput" inputmode="numeric" placeholder="ex. 6522981 ou chaîne complète"><button id="manualBtn" class="btn secondary">Identifier</button></div></details>
       </section>
 
       <section id="collectionView" class="view">
         <div class="section-head"><div><div class="eyebrow">MA COLLECTION</div><h2>Figurines trouvées</h2></div><button id="clearCollection" class="link-btn">Réinitialiser</button></div>
-        <div class="backup-card">
-          <div><strong>Sauvegarde de collection</strong><small>Exporte ta collection, les quantités et la wishlist pour les restaurer sur un autre téléphone.</small></div>
-          <div class="backup-actions">
-            <button id="backupCollectionBtn" class="btn secondary">⬇️ Sauvegarder</button>
-            <button id="restoreCollectionBtn" class="btn secondary">⬆️ Restaurer</button>
-            <input id="restoreCollectionInput" type="file" accept="application/json,.json" hidden>
-          </div>
-          <div id="backupStatus" class="backup-status" aria-live="polite"></div>
-        </div>
-
+        <div class="backup-card"><div><strong>Sauvegarde de collection</strong><small>Exporte ta collection, les quantités et la wishlist pour les restaurer sur un autre téléphone.</small></div><div class="backup-actions"><button id="backupCollectionBtn" class="btn secondary">⬇️ Sauvegarder</button><button id="restoreCollectionBtn" class="btn secondary">⬆️ Restaurer</button><input id="restoreCollectionInput" type="file" accept="application/json,.json" hidden></div><div id="backupStatus" class="backup-status" aria-live="polite"></div></div>
         <div class="collection-tools">
-          <form id="collectionSearchForm" class="collection-search-form" role="search">
-            <label class="collection-search-wrap" for="collectionSearch"><span aria-hidden="true">🔎</span><input id="collectionSearch" class="collection-search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Rechercher une figurine, série ou set"></label>
-            <button id="collectionSearchBtn" class="btn primary collection-search-btn" type="submit">🔎 Rechercher</button>
-            <button id="collectionSearchClear" class="btn secondary collection-search-clear" type="button" disabled>✕ Effacer</button>
-          </form>
-          <div id="ownershipFilters" class="ownership-filters" aria-label="Filtrer la collection">
-            <button class="ownership-chip active" data-owned-filter="all">Toutes</button>
-            <button class="ownership-chip" data-owned-filter="owned">✓ Possédées</button>
-            <button class="ownership-chip" data-owned-filter="missing">○ Manquantes</button>
-          </div>
+          <form id="collectionSearchForm" class="collection-search-form" role="search"><label class="collection-search-wrap" for="collectionSearch"><span aria-hidden="true">🔎</span><input id="collectionSearch" class="collection-search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Rechercher une figurine, série ou set"></label><button id="collectionSearchBtn" class="btn primary collection-search-btn" type="submit">🔎 Rechercher</button><button id="collectionSearchClear" class="btn secondary collection-search-clear" type="button" disabled>✕ Effacer</button></form>
+          <div id="ownershipFilters" class="ownership-filters" aria-label="Filtrer la collection"><button class="ownership-chip active" data-owned-filter="all">Toutes</button><button class="ownership-chip" data-owned-filter="owned">✓ Possédées</button><button class="ownership-chip" data-owned-filter="missing">○ Manquantes</button></div>
           <div id="collectionVisibleCount" class="collection-visible-count"></div>
         </div>
-
-        <div id="collectionStats" class="stats-card"></div>
-        <div id="seriesFilters" class="filters"></div>
-        <div id="collectionGrid" class="collection-grid"></div>
-        <div id="collectionFilterEmpty" class="collection-filter-empty hidden"><strong>Aucune figurine ici</strong>Essaie un autre filtre ou une autre recherche.</div>
+        <div id="collectionStats" class="stats-card"></div><div id="seriesFilters" class="filters"></div><div id="collectionGrid" class="collection-grid"></div><div id="collectionFilterEmpty" class="collection-filter-empty hidden"><strong>Aucune figurine ici</strong>Essaie un autre filtre ou une autre recherche.</div>
       </section>
 
-      <section id="historyView" class="view">
-        <div class="section-head"><div><div class="eyebrow">HISTORIQUE</div><h2>Derniers scans</h2></div><button id="clearHistory" class="link-btn">Effacer</button></div>
-        <div id="historyList" class="history-list"></div>
-      </section>
+      <section id="historyView" class="view"><div class="section-head"><div><div class="eyebrow">HISTORIQUE</div><h2>Derniers scans</h2></div><button id="clearHistory" class="link-btn">Effacer</button></div><div id="historyList" class="history-list"></div></section>
 
-      <section id="infoView" class="view">
-        <div class="info-card">
-          <div class="eyebrow">MODE D’EMPLOI</div><h2>Le bon code est le Data Matrix</h2>
-          <ol><li>Retourne la boîte.</li><li>Repère le petit carré proche du code-barres.</li><li>Vise-le à 6–12 cm, bien à plat.</li><li>Si le direct hésite, utilise « Photo du code ».</li></ol>
-          <h3>Séries incluses</h3><p>BrickScan inclut maintenant les séries numérotées 1 à 29 ainsi que les principales séries Collectable Minifigures sous licence : Team GB, La Grande Aventure LEGO, Les Simpson, Disney, équipe d’Allemagne DFB, LEGO Batman Le Film, LEGO NINJAGO Le Film, Harry Potter et Les Animaux fantastiques, DC Super Heroes, Looney Tunes, Marvel Studios, Les Muppets, Disney 100, Dungeons & Dragons, Spider-Verse et Shrek. Les anciennes séries sont gérées manuellement ; seuls les codes Data Matrix modernes vérifiés sont activés pour le scan.</p>
-          <h3>Collection</h3><p>Chaque carte ouvre une fiche figurine avec série, set, année, quantité d’exemplaires et wishlist. Les doublons sont comptés séparément et la wishlist peut être filtrée directement. Les séries historiques sous licence restent sans photo tant que leur correspondance visuelle n’est pas vérifiée.</p>
-          <h3>Mode magasin</h3><p>Le bouton 🛒 dans Scanner active une vue express pour enchaîner les boîtes. Le résultat indique immédiatement si la figurine est nouvelle, déjà possédée, dans la wishlist ou hors wishlist lorsque le filtre ciblé est actif.</p>
-          <h3>Recherche</h3><p>Recherche validée par le bouton « Rechercher » ou la touche Entrée, bouton « Effacer », filtres Toutes / Possédées / Manquantes / Wishlist et progression directement sur chaque série.</p>
-          <h3>Sauvegarde</h3><p>La sauvegarde inclut la collection, les quantités et la wishlist. Les anciennes sauvegardes restent acceptées.</p>
-          <h3>Mises à jour</h3>
-          <div class="update-card">
-            <div><strong>Version installée : <span id="currentVersion">2.2.0</span></strong><small id="updateState">BrickScan vérifie automatiquement les nouvelles versions.</small></div>
-            <button id="checkUpdateBtn" class="btn secondary">Vérifier</button>
-          </div>
-          <h3>Confidentialité</h3><p>Le scan est effectué sur ton appareil. Ta collection et ton historique sont stockés localement dans le navigateur.</p>
-          <div class="disclaimer">Application indépendante de fan. LEGO® est une marque du groupe LEGO, qui ne sponsorise ni n’approuve cette application.</div>
-        </div>
-      </section>
+      <section id="infoView" class="view"><div class="info-card"><div class="eyebrow">MODE D’EMPLOI</div><h2>Le bon code est le Data Matrix</h2><ol><li>Retourne la boîte.</li><li>Repère le petit carré proche du code-barres.</li><li>Vise-le à 6–12 cm, bien à plat.</li><li>Si le direct hésite, utilise « Photo du code ».</li></ol><h3>Séries incluses</h3><p>BrickScan inclut maintenant les séries numérotées 1 à 29 ainsi que les principales séries Collectable Minifigures sous licence : Team GB, La Grande Aventure LEGO, Les Simpson, Disney, équipe d’Allemagne DFB, LEGO Batman Le Film, LEGO NINJAGO Le Film, Harry Potter et Les Animaux fantastiques, DC Super Heroes, Looney Tunes, Marvel Studios, Les Muppets, Disney 100, Dungeons & Dragons, Spider-Verse et Shrek. Les anciennes séries sont gérées manuellement ; seuls les codes Data Matrix modernes vérifiés sont activés pour le scan.</p><h3>Collection</h3><p>Chaque carte ouvre une fiche figurine avec série, set, année, quantité d’exemplaires et wishlist. Les doublons sont comptés séparément et la wishlist peut être filtrée directement. Les séries historiques sous licence restent sans photo tant que leur correspondance visuelle n’est pas vérifiée.</p><h3>Mode magasin</h3><p>Le bouton 🛒 dans Scanner active une vue express pour enchaîner les boîtes. Le résultat indique immédiatement si la figurine est nouvelle, déjà possédée, dans la wishlist ou hors wishlist lorsque le filtre ciblé est actif.</p><h3>Recherche</h3><p>Recherche validée par le bouton « Rechercher » ou la touche Entrée, bouton « Effacer », filtres Toutes / Possédées / Manquantes / Wishlist et progression directement sur chaque série.</p><h3>Sauvegarde</h3><p>La sauvegarde inclut la collection, les quantités et la wishlist. Les anciennes sauvegardes restent acceptées.</p><h3>Mises à jour</h3><div class="update-card"><div><strong>Version installée : <span id="currentVersion">2.2.0</span></strong><small id="updateState">BrickScan vérifie automatiquement les nouvelles versions.</small></div><button id="checkUpdateBtn" class="btn secondary">Vérifier</button></div><h3>Confidentialité</h3><p>Le scan est effectué sur ton appareil. Ta collection et ton historique sont stockés localement dans le navigateur.</p><div class="disclaimer">Application indépendante de fan. LEGO® est une marque du groupe LEGO, qui ne sponsorise ni n’approuve cette application.</div></div></section>
     </main>
 
-    <nav class="bottom-nav" aria-label="Navigation">
-      <button data-view="scanView" class="nav-btn active"><span>▦</span><small>Scanner</small></button>
-      <button data-view="collectionView" class="nav-btn"><span>◆</span><small>Collection</small></button>
-      <button data-view="historyView" class="nav-btn"><span>◷</span><small>Historique</small></button>
-      <button data-view="infoView" class="nav-btn"><span>ⓘ</span><small>Infos</small></button>
-    </nav>
+    <nav class="bottom-nav" aria-label="Navigation"><button data-view="scanView" class="nav-btn active"><span>▦</span><small>Scanner</small></button><button data-view="collectionView" class="nav-btn"><span>◆</span><small>Collection</small></button><button data-view="historyView" class="nav-btn"><span>◷</span><small>Historique</small></button><button data-view="infoView" class="nav-btn"><span>ⓘ</span><small>Infos</small></button></nav>
   </div>
 
-  <section id="figureSheet" class="figure-sheet hidden" aria-hidden="true" aria-label="Fiche figurine">
-    <div id="figureSheetBackdrop" class="figure-sheet-backdrop"></div>
-    <div class="figure-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="figureSheetName">
-      <div class="figure-sheet-head"><div class="eyebrow">FICHE FIGURINE</div><button id="figureSheetClose" class="figure-sheet-close" type="button" aria-label="Fermer">✕</button></div>
-      <img id="figureSheetImage" class="figure-sheet-photo hidden" alt="">
-      <div id="figureSheetFallback" class="figure-sheet-fallback">◆</div>
-      <h2 id="figureSheetName"></h2>
-      <div id="figureSheetSeries" class="figure-sheet-series"></div>
-      <div class="figure-sheet-meta">
-        <div><span>N°</span><strong id="figureSheetNumber">—</strong></div>
-        <div><span>Set</span><strong id="figureSheetSet">—</strong></div>
-        <div><span>Année</span><strong id="figureSheetYear">—</strong></div>
-        <div><span>Scan</span><strong id="figureSheetScan">—</strong></div>
-      </div>
-      <div class="figure-owned-box">
-        <strong>Mes exemplaires</strong>
-        <div class="figure-qty"><button id="figureQtyMinus" type="button" aria-label="Retirer un exemplaire">−</button><strong id="figureQtyValue">0</strong><button id="figureQtyPlus" type="button" aria-label="Ajouter un exemplaire">＋</button></div>
-        <div id="figureOwnedState" class="figure-owned-state"></div>
-      </div>
-      <button id="figureWishlistBtn" class="btn secondary figure-wishlist" type="button">☆ Ajouter à ma wishlist</button>
-      <div id="figureSheetCodes" class="figure-codes"></div>
-    </div>
-  </section>
+  <section id="figureSheet" class="figure-sheet hidden" aria-hidden="true" aria-label="Fiche figurine"><div id="figureSheetBackdrop" class="figure-sheet-backdrop"></div><div class="figure-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="figureSheetName"><div class="figure-sheet-head"><div class="eyebrow">FICHE FIGURINE</div><button id="figureSheetClose" class="figure-sheet-close" type="button" aria-label="Fermer">✕</button></div><img id="figureSheetImage" class="figure-sheet-photo hidden" alt=""><div id="figureSheetFallback" class="figure-sheet-fallback">◆</div><h2 id="figureSheetName"></h2><div id="figureSheetSeries" class="figure-sheet-series"></div><div class="figure-sheet-meta"><div><span>N°</span><strong id="figureSheetNumber">—</strong></div><div><span>Set</span><strong id="figureSheetSet">—</strong></div><div><span>Année</span><strong id="figureSheetYear">—</strong></div><div><span>Scan</span><strong id="figureSheetScan">—</strong></div></div><div class="figure-owned-box"><strong>Mes exemplaires</strong><div class="figure-qty"><button id="figureQtyMinus" type="button" aria-label="Retirer un exemplaire">−</button><strong id="figureQtyValue">0</strong><button id="figureQtyPlus" type="button" aria-label="Ajouter un exemplaire">＋</button></div><div id="figureOwnedState" class="figure-owned-state"></div></div><button id="figureWishlistBtn" class="btn secondary figure-wishlist" type="button">☆ Ajouter à ma wishlist</button><div id="figureSheetCodes" class="figure-codes"></div></div></section>
 
-  <script src="data.js?v=220"></script>
-  <script src="archive-data.js?v=220"></script>
-  <script src="archive-images.js?v=220"></script>
-  <script src="special-data.js?v=220"></script>
-  <script src="shrek-data.js?v=220"></script>
-  <script src="app.js?v=220"></script>
-  <script src="v14.js?v=220"></script>
-  <script src="backup.js?v=220"></script>
-  <script src="v19.js?v=220"></script>
-  <script src="v20.js?v=220"></script>
-  <script src="v21.js?v=220"></script>
+  <script src="data.js?v=220"></script><script src="archive-data.js?v=220"></script><script src="archive-images.js?v=220"></script><script src="special-data.js?v=220"></script><script src="shrek-data.js?v=220"></script><script src="app.js?v=220"></script><script src="v14.js?v=220"></script><script src="backup.js?v=220"></script><script src="v19.js?v=220"></script><script src="v20.js?v=220"></script><script src="v21.js?v=220"></script><script src="v22.js?v=220"></script>
 </body>
 </html>
