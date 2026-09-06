@@ -8,20 +8,20 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="description" content="Scanner mobile de codes Data Matrix pour identifier les minifigurines de collection.">
-  <title>BrickScan Mini 2.0</title>
-  <link rel="manifest" href="manifest.webmanifest?v=200">
+  <title>BrickScan Mini 2.1</title>
+  <link rel="manifest" href="manifest.webmanifest?v=210">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=200">
-  <link rel="stylesheet" href="v14.css?v=200">
-  <link rel="stylesheet" href="v19.css?v=200">
-  <link rel="stylesheet" href="v20.css?v=200">
+  <link rel="stylesheet" href="styles.css?v=210">
+  <link rel="stylesheet" href="v14.css?v=210">
+  <link rel="stylesheet" href="v19.css?v=210">
+  <link rel="stylesheet" href="v20.css?v=210">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true">▦</div>
-      <div><h1>BrickScan Mini</h1><p>Scanner de minifigurines · v2.0</p></div>
+      <div><h1>BrickScan Mini</h1><p>Scanner de minifigurines · v2.1</p></div>
       <button id="installBtn" class="icon-btn hidden" title="Installer">＋</button>
     </header>
 
@@ -47,7 +47,7 @@
             </div>
           </div>
           <div id="fallbackScanner" class="fallback hidden"></div>
-          <div id="scanStatus" class="status">Prêt · v2.0</div>
+          <div id="scanStatus" class="status">Prêt · v2.1</div>
           <div class="actions-row">
             <button id="startBtn" class="btn primary">📷 Scanner en direct</button>
             <label for="photoInput" class="btn secondary">🖼️ Photo du code<input id="photoInput" type="file" accept="image/*" capture="environment" hidden></label>
@@ -120,12 +120,13 @@
           <div class="eyebrow">MODE D’EMPLOI</div><h2>Le bon code est le Data Matrix</h2>
           <ol><li>Retourne la boîte.</li><li>Repère le petit carré proche du code-barres.</li><li>Vise-le à 6–12 cm, bien à plat.</li><li>Si le direct hésite, utilise « Photo du code ».</li></ol>
           <h3>Séries incluses</h3><p>Shrek 71053 apparaît en premier dans la collection, avec ses 12 personnages et leurs photos. Son scan reste volontairement désactivé tant que les codes de production ne sont pas assez vérifiés. Toutes les séries numérotées 1 à 29 sont disponibles ; les séries 25 à 29 sont scannables, les séries 1 à 24 sont gérées manuellement. Dungeons & Dragons et Spider-Verse sont également incluses.</p>
-          <h3>Collection</h3><p>Chaque carte ouvre maintenant une fiche figurine avec photo, série, set, année, quantité d’exemplaires et wishlist. Les doublons sont comptés séparément et les cartes affichent ×2, ×3… lorsqu’il y en a plusieurs.</p>
-          <h3>Recherche</h3><p>Recherche validée par le bouton « Rechercher » ou la touche Entrée, bouton « Effacer », filtres Toutes / Possédées / Manquantes et progression directement sur chaque série.</p>
-          <h3>Sauvegarde</h3><p>La sauvegarde V2.0 inclut la collection, les quantités et la wishlist. Les anciennes sauvegardes restent acceptées.</p>
+          <h3>Collection</h3><p>Chaque carte ouvre une fiche figurine avec photo, série, set, année, quantité d’exemplaires et wishlist. Les doublons sont comptés séparément et la wishlist peut être filtrée directement.</p>
+          <h3>Mode magasin</h3><p>Le bouton 🛒 dans Scanner active une vue express pour enchaîner les boîtes. Le résultat indique immédiatement si la figurine est nouvelle, déjà possédée, dans la wishlist ou hors wishlist lorsque le filtre ciblé est actif.</p>
+          <h3>Recherche</h3><p>Recherche validée par le bouton « Rechercher » ou la touche Entrée, bouton « Effacer », filtres Toutes / Possédées / Manquantes / Wishlist et progression directement sur chaque série.</p>
+          <h3>Sauvegarde</h3><p>La sauvegarde inclut la collection, les quantités et la wishlist. Les anciennes sauvegardes restent acceptées.</p>
           <h3>Mises à jour</h3>
           <div class="update-card">
-            <div><strong>Version installée : <span id="currentVersion">2.0.0</span></strong><small id="updateState">BrickScan vérifie automatiquement les nouvelles versions.</small></div>
+            <div><strong>Version installée : <span id="currentVersion">2.1.0</span></strong><small id="updateState">BrickScan vérifie automatiquement les nouvelles versions.</small></div>
             <button id="checkUpdateBtn" class="btn secondary">Vérifier</button>
           </div>
           <h3>Confidentialité</h3><p>Le scan est effectué sur ton appareil. Ta collection et ton historique sont stockés localement dans le navigateur.</p>
@@ -166,14 +167,15 @@
     </div>
   </section>
 
-  <script src="data.js?v=200"></script>
-  <script src="archive-data.js?v=200"></script>
-  <script src="archive-images.js?v=200"></script>
-  <script src="shrek-data.js?v=200"></script>
-  <script src="app.js?v=200"></script>
-  <script src="v14.js?v=200"></script>
-  <script src="backup.js?v=200"></script>
-  <script src="v19.js?v=200"></script>
-  <script src="v20.js?v=200"></script>
+  <script src="data.js?v=210"></script>
+  <script src="archive-data.js?v=210"></script>
+  <script src="archive-images.js?v=210"></script>
+  <script src="shrek-data.js?v=210"></script>
+  <script src="app.js?v=210"></script>
+  <script src="v14.js?v=210"></script>
+  <script src="backup.js?v=210"></script>
+  <script src="v19.js?v=210"></script>
+  <script src="v20.js?v=210"></script>
+  <script src="v21.js?v=210"></script>
 </body>
 </html>
