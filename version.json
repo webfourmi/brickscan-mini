@@ -1,6 +1,6 @@
 {
-  "version": "2.5.1",
-  "build": 251,
+  "version": "2.6.0",
+  "build": 260,
   "released": "2026-09-06",
-  "notes": "Correction du changement d’état dans les fiches d’exemplaires"
+  "notes": "Fiches d’exemplaires éditables, état Comme neuf par défaut, filtre doublons et export CSV pour échanges"
 }
