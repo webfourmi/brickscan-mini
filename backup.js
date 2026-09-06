@@ -24,22 +24,48 @@
     return `${y}-${m}-${day}`;
   }
 
-  function currentOwned() {
-    try {
-      const raw = JSON.parse(localStorage.getItem('brickscan-owned') || '[]');
-      return Array.isArray(raw) ? raw.filter(id => typeof id === 'string') : [];
-    } catch (_) {
-      return [];
+  function loadArray(key) {
+    try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v : []; }
+    catch (_) { return []; }
+  }
+  function loadObject(key) {
+    try { const v = JSON.parse(localStorage.getItem(key) || '{}'); return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; }
+    catch (_) { return {}; }
+  }
+
+  function sanitizeOwned(list) {
+    return [...new Set((Array.isArray(list) ? list : []).filter(id => typeof id === 'string' && validIds.has(id)))];
+  }
+  function sanitizeWishlist(list) {
+    return [...new Set((Array.isArray(list) ? list : []).filter(id => typeof id === 'string' && validIds.has(id)))];
+  }
+  function sanitizeCounts(obj, owned) {
+    const out = {};
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      for (const [id, value] of Object.entries(obj)) {
+        if (!validIds.has(id)) continue;
+        const n = Math.max(0, Math.min(99, Math.floor(Number(value) || 0)));
+        if (n > 0) out[id] = n;
+      }
     }
+    for (const id of owned) if (!out[id]) out[id] = 1;
+    return out;
   }
 
   function saveCollection() {
-    const owned = [...new Set(currentOwned())].filter(id => validIds.has(id));
+    const owned = sanitizeOwned(loadArray('brickscan-owned'));
+    const wishlist = sanitizeWishlist(loadArray('brickscan-wishlist'));
+    const counts = sanitizeCounts(loadObject('brickscan-counts'), owned);
     const payload = {
       format: 'brickscan-mini-collection',
-      formatVersion: 1,
-      appVersion: '1.9.1',
+      formatVersion: 2,
+      appVersion: '2.0.0',
       exportedAt: new Date().toISOString(),
+      collection: {
+        owned,
+        counts,
+        wishlist
+      },
       count: owned.length,
       owned
     };
@@ -53,7 +79,8 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setStatus(`Sauvegarde créée · ${owned.length} figurine${owned.length > 1 ? 's' : ''}.`);
+    const copies = Object.values(counts).reduce((sum, n) => sum + Number(n || 0), 0);
+    setStatus(`Sauvegarde créée · ${owned.length} figurines · ${copies} exemplaires · ${wishlist.length} souhaits.`);
   }
 
   async function restoreCollection(file) {
@@ -62,26 +89,33 @@
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
-      const list = Array.isArray(parsed) ? parsed : parsed?.owned;
 
-      if (!Array.isArray(list)) throw new Error('Format de sauvegarde non reconnu');
+      const oldList = Array.isArray(parsed) ? parsed : parsed?.owned;
+      const collection = parsed?.collection && typeof parsed.collection === 'object' ? parsed.collection : null;
+      const rawOwned = collection?.owned ?? oldList;
+      if (!Array.isArray(rawOwned)) throw new Error('Format de sauvegarde non reconnu');
 
-      const unique = [...new Set(list.filter(id => typeof id === 'string'))];
-      const accepted = unique.filter(id => validIds.has(id));
-      const ignored = unique.length - accepted.length;
+      const owned = sanitizeOwned(rawOwned);
+      const wishlist = sanitizeWishlist(collection?.wishlist || []);
+      const counts = sanitizeCounts(collection?.counts || {}, owned);
+      const suppliedCount = Array.isArray(rawOwned) ? rawOwned.length : 0;
+      const ignored = Math.max(0, suppliedCount - owned.length);
 
-      if (!accepted.length && unique.length) {
+      if (!owned.length && suppliedCount) {
         throw new Error('Aucune figurine de cette sauvegarde ne correspond au catalogue actuel');
       }
 
-      const message = `Restaurer ${accepted.length} figurine${accepted.length > 1 ? 's' : ''} ?\n\nLa collection actuellement cochée sera remplacée.${ignored ? `\n${ignored} ancien${ignored > 1 ? 's' : ''} identifiant${ignored > 1 ? 's' : ''} sera ignoré.` : ''}`;
+      const copies = Object.values(counts).reduce((sum, n) => sum + Number(n || 0), 0);
+      const message = `Restaurer ${owned.length} figurine${owned.length > 1 ? 's' : ''}, ${copies} exemplaire${copies > 1 ? 's' : ''} et ${wishlist.length} souhait${wishlist.length > 1 ? 's' : ''} ?\n\nLa collection, les quantités et la wishlist actuelles seront remplacées.${ignored ? `\n${ignored} ancien${ignored > 1 ? 's' : ''} identifiant${ignored > 1 ? 's' : ''} sera ignoré.` : ''}`;
       if (!confirm(message)) {
         setStatus('Restauration annulée.');
         return;
       }
 
-      localStorage.setItem('brickscan-owned', JSON.stringify(accepted));
-      setStatus(`Collection restaurée · ${accepted.length} figurine${accepted.length > 1 ? 's' : ''}. Rechargement…`);
+      localStorage.setItem('brickscan-owned', JSON.stringify(owned));
+      localStorage.setItem('brickscan-counts', JSON.stringify(counts));
+      localStorage.setItem('brickscan-wishlist', JSON.stringify(wishlist));
+      setStatus('Collection V2.0 restaurée. Rechargement…');
       setTimeout(() => location.reload(), 650);
     } catch (error) {
       console.error('BrickScan restore:', error);
