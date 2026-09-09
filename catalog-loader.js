@@ -3,12 +3,26 @@
   const VERSION_KEY = 'brickscan-code-catalog-version-v1';
   const RELOAD_KEY = 'brickscan-code-catalog-reload-v1';
 
+  function mergeFigures(previousFigures, incomingFigures) {
+    const byId = new Map((Array.isArray(previousFigures) ? previousFigures : []).map(fig => [fig.id, fig]));
+    for (const incoming of Array.isArray(incomingFigures) ? incomingFigures : []) {
+      if (!incoming?.id) continue;
+      const previous = byId.get(incoming.id) || {};
+      byId.set(incoming.id, {...previous, ...incoming});
+    }
+    return [...byId.values()].sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
+  }
+
   function mergeSeries(base, overlay) {
     const byId = new Map((Array.isArray(base) ? base : []).map(series => [series.id, series]));
     for (const incoming of Array.isArray(overlay) ? overlay : []) {
       if (!incoming?.id || !Array.isArray(incoming.figures)) continue;
       const previous = byId.get(incoming.id) || {};
-      byId.set(incoming.id, {...previous, ...incoming, figures: incoming.figures});
+      byId.set(incoming.id, {
+        ...previous,
+        ...incoming,
+        figures: mergeFigures(previous.figures, incoming.figures)
+      });
     }
     return [...byId.values()];
   }
