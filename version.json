@@ -1,6 +1,6 @@
 {
-  "version": "2.7.0",
-  "build": 270,
-  "released": "2026-09-06",
-  "notes": "Nouveau moteur de scan Data Matrix double moteur : BarcodeDetector natif + secours ZXing avec recadrage central agrandi"
+  "version": "2.8.0",
+  "build": 280,
+  "released": "2026-09-09",
+  "notes": "Catalogue de codes JSON téléchargeable et extensible, séparation Séries standard / Séries spéciales dans Collection"
 }
