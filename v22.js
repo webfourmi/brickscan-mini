@@ -1,16 +1,16 @@
 (() => {
-  const APP_VERSION = '2.8.0';
+  const APP_VERSION = '2.8.1';
 
   if (!document.querySelector('script[data-brickscan-v24]')) {
     const script = document.createElement('script');
-    script.src = 'v24.js?v=280';
+    script.src = 'v24.js?v=281';
     script.dataset.brickscanV24 = 'true';
     document.body.appendChild(script);
   }
 
   if (!document.querySelector('script[data-brickscan-scanner-v27]')) {
     const scanner = document.createElement('script');
-    scanner.src = 'scanner-v27.js?v=280';
+    scanner.src = 'scanner-v27.js?v=281';
     scanner.dataset.brickscanScannerV27 = 'true';
     document.body.appendChild(scanner);
   }
@@ -26,11 +26,11 @@
   setTimeout(() => {
     document.getElementById('clearCollection')?.remove();
     const headerVersion = document.querySelector('.topbar p');
-    if (headerVersion) headerVersion.textContent = 'Scanner de minifigurines · v2.8';
+    if (headerVersion) headerVersion.textContent = 'Scanner de minifigurines · v2.8.1';
     const scanStatus = document.getElementById('scanStatus');
-    if (scanStatus && /Prêt/.test(scanStatus.textContent || '')) scanStatus.textContent = 'Prêt · v2.8';
+    if (scanStatus && /Prêt/.test(scanStatus.textContent || '')) scanStatus.textContent = 'Prêt · v2.8.1';
     const currentVersion = document.getElementById('currentVersion');
     if (currentVersion) currentVersion.textContent = APP_VERSION;
-    document.title = 'BrickScan Mini 2.8';
+    document.title = 'BrickScan Mini 2.8.1';
   }, 0);
 })();
