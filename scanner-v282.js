@@ -15,11 +15,13 @@
   const unknownCard = $('unknownCard');
   const manualInput = $('manualInput');
   const manualBtn = $('manualBtn');
+  const scanAgainBtn = $('scanAgainBtn');
   if (!video || !startBtn || !stopBtn || !manualInput || !manualBtn) return;
 
   let stream=null, detector=null, zxingReader=null, zxingPromise=null;
   let scanning=false, paused=false, busyNative=false, busyZXing=false, torchOn=false;
   let lastNative=0, lastZXing=0, cropPass=0, raf=0;
+  let lastAcceptedRaw='', ignoreSameUntil=0, resumeNotBefore=0;
   const canvas=document.createElement('canvas');
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
 
@@ -30,7 +32,13 @@
     if(zxingPromise)return zxingPromise;
     zxingPromise=new Promise(resolve=>{
       const old=document.querySelector('script[data-brickscan-zxing]');
-      if(old){old.addEventListener('load',()=>resolve(Boolean(window.ZXing?.MultiFormatReader)),{once:true});old.addEventListener('error',()=>resolve(false),{once:true});return;}
+      if(old){
+        if(window.ZXing?.MultiFormatReader){resolve(true);return;}
+        old.addEventListener('load',()=>resolve(Boolean(window.ZXing?.MultiFormatReader)),{once:true});
+        old.addEventListener('error',()=>resolve(false),{once:true});
+        setTimeout(()=>resolve(Boolean(window.ZXing?.MultiFormatReader)),1800);
+        return;
+      }
       const s=document.createElement('script');s.src=ZXING_URL;s.async=true;s.dataset.brickscanZxing='true';s.onload=()=>resolve(Boolean(window.ZXing?.MultiFormatReader));s.onerror=()=>resolve(false);document.head.appendChild(s);
     });
     return zxingPromise;
@@ -60,16 +68,19 @@
     for(const make of tries){try{const bitmap=make();if(!bitmap)continue;const r=zxingReader.decodeWithState(bitmap);const t=r?.getText?.()||r?.text||'';if(t)return String(t);}catch(_){}finally{try{zxingReader.reset();}catch(_){}}}return'';
   }
 
-  function pauseAfterResult(source){
+  function pauseAfterResult(){
     paused=true;scanning=false;if(raf)cancelAnimationFrame(raf);raf=0;
-    setStatus(source.includes('zxing')?'Code identifié ✓ · prêt pour le suivant':'Code identifié ✓ · prêt pour le suivant');
+    setStatus('Code identifié ✓ · prêt pour le suivant');
   }
 
-  function handoffRaw(raw,source='camera-v282'){
+  function handoffRaw(raw,source='camera-v283'){
     const text=String(raw||'').trim();if(!text)return false;
+    const now=Date.now();
+    if(now<resumeNotBefore)return false;
+    if(text===lastAcceptedRaw&&now<ignoreSameUntil)return false;
     manualInput.value=text;manualBtn.click();
     const identified=!resultCard?.classList.contains('hidden');
-    if(identified){pauseAfterResult(source);return true;}
+    if(identified){lastAcceptedRaw=text;pauseAfterResult(source);return true;}
     return false;
   }
 
@@ -83,7 +94,7 @@
     try{const scale=cropPass++%2===0?.66:.48;if(!drawCrop(scale))return false;const raw=decodeZXingCanvas();return raw?handoffRaw(raw,'camera-zxing'):false;}catch(_){return false;}finally{busyZXing=false;}
   }
 
-  async function scanLoop(ts){if(!scanning||paused)return;if(ts-lastNative>=170){lastNative=ts;if(await tryNative())return;}if(ts-lastZXing>=520){lastZXing=ts;if(await tryZXing())return;}if(scanning&&!paused)raf=requestAnimationFrame(scanLoop);}
+  async function scanLoop(ts){if(!scanning||paused)return;if(Date.now()<resumeNotBefore){raf=requestAnimationFrame(scanLoop);return;}if(ts-lastNative>=170){lastNative=ts;if(await tryNative())return;}if(ts-lastZXing>=520){lastZXing=ts;if(await tryZXing())return;}if(scanning&&!paused)raf=requestAnimationFrame(scanLoop);}
 
   async function setupTrack(){
     const track=stream?.getVideoTracks?.()[0];if(!track)return;const caps=track.getCapabilities?.()||{};const advanced=[];if(Array.isArray(caps.focusMode)&&caps.focusMode.includes('continuous'))advanced.push({focusMode:'continuous'});if(advanced.length)try{await track.applyConstraints({advanced});}catch(_){}
@@ -92,24 +103,59 @@
 
   async function ensureEngines(){const nativeOk=await buildNativeDetector();const zxingOk=await loadZXing();if(zxingOk)buildZXingReader();return{nativeOk,zxingOk};}
 
-  async function startLive(){
-    resultCard?.classList.add('hidden');unknownCard?.classList.add('hidden');
-    if(stream&&video.srcObject){paused=false;scanning=true;const {nativeOk,zxingOk}=await ensureEngines();setStatus(nativeOk&&zxingOk?'Caméra active · double moteur Data Matrix':nativeOk?'Caméra active · moteur natif':zxingOk?'Caméra active · moteur renforcé':'Caméra active');lastNative=0;lastZXing=0;cropPass=0;raf=requestAnimationFrame(scanLoop);return;}
-    if(!window.isSecureContext&&location.hostname!=='localhost'){setStatus('La caméra nécessite HTTPS.');return;}if(!navigator.mediaDevices?.getUserMedia){setStatus('Ce navigateur ne permet pas l’accès caméra.');return;}
-    startBtn.disabled=true;setStatus('Ouverture de la caméra…');
-    try{const zxingLoading=loadZXing();stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30,max:30}}});video.srcObject=stream;video.setAttribute('playsinline','');video.muted=true;await video.play();placeholder?.classList.add('hidden');nativeScanner?.classList.remove('hidden');paused=false;scanning=true;startBtn.classList.add('hidden');stopBtn.classList.remove('hidden');await setupTrack();const nativeOk=await buildNativeDetector();const zxingOk=await zxingLoading;if(zxingOk)buildZXingReader();setStatus(nativeOk&&zxingOk?'Caméra active · double moteur Data Matrix':nativeOk?'Caméra active · moteur natif':zxingOk?'Caméra active · moteur renforcé':'Caméra active · utilise Photo du code');lastNative=0;lastZXing=0;cropPass=0;raf=requestAnimationFrame(scanLoop);}catch(e){console.error('BrickScan V2.8.2 caméra',e);await stopLive(false);setStatus(e?.name==='NotAllowedError'?'Accès caméra refusé. Autorise la caméra dans Chrome.':e?.name==='NotFoundError'?'Aucune caméra arrière disponible.':`Impossible d’ouvrir la caméra${e?.name?' · '+e.name:''}`);}
+  function beginLoop(){
+    paused=false;scanning=true;busyNative=false;busyZXing=false;lastNative=0;lastZXing=0;cropPass=0;
+    if(raf)cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(scanLoop);
   }
 
-  async function stopLive(resetStatus=true){scanning=false;paused=false;busyNative=false;busyZXing=false;if(raf)cancelAnimationFrame(raf);raf=0;detector=null;torchOn=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}try{video.pause();}catch(_){}video.srcObject=null;placeholder?.classList.remove('hidden');startBtn.disabled=false;startBtn.classList.remove('hidden');stopBtn.classList.add('hidden');torchBtn?.classList.add('hidden');zoomWrap?.classList.add('hidden');if(resetStatus)setStatus('Prêt · v2.8.2');}
+  async function resumeScan(){
+    resultCard?.classList.add('hidden');unknownCard?.classList.add('hidden');
+    resumeNotBefore=Date.now()+650;
+    ignoreSameUntil=Date.now()+2200;
+    if(stream&&video.srcObject){
+      try{if(video.paused)await video.play();}catch(_){}
+      placeholder?.classList.add('hidden');
+      startBtn.classList.add('hidden');
+      stopBtn.classList.remove('hidden');
+      beginLoop();
+      setStatus('Change de boîte… scan prêt');
+      nativeScanner?.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+    await startLive();
+  }
+
+  async function startLive(){
+    resultCard?.classList.add('hidden');unknownCard?.classList.add('hidden');
+    if(stream&&video.srcObject){
+      try{if(video.paused)await video.play();}catch(_){}
+      if(!detector&&!zxingReader)await ensureEngines();
+      beginLoop();
+      setStatus('Caméra active · lecture Data Matrix');
+      return;
+    }
+    if(!window.isSecureContext&&location.hostname!=='localhost'){setStatus('La caméra nécessite HTTPS.');return;}if(!navigator.mediaDevices?.getUserMedia){setStatus('Ce navigateur ne permet pas l’accès caméra.');return;}
+    startBtn.disabled=true;setStatus('Ouverture de la caméra…');
+    try{const zxingLoading=loadZXing();stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30,max:30}}});video.srcObject=stream;video.setAttribute('playsinline','');video.muted=true;await video.play();placeholder?.classList.add('hidden');nativeScanner?.classList.remove('hidden');startBtn.classList.add('hidden');stopBtn.classList.remove('hidden');await setupTrack();const nativeOk=await buildNativeDetector();const zxingOk=await zxingLoading;if(zxingOk)buildZXingReader();setStatus(nativeOk&&zxingOk?'Caméra active · double moteur Data Matrix':nativeOk?'Caméra active · moteur natif':zxingOk?'Caméra active · moteur renforcé':'Caméra active · utilise Photo du code');resumeNotBefore=0;ignoreSameUntil=0;beginLoop();}catch(e){console.error('BrickScan V2.8.3 caméra',e);await stopLive(false);setStatus(e?.name==='NotAllowedError'?'Accès caméra refusé. Autorise la caméra dans Chrome.':e?.name==='NotFoundError'?'Aucune caméra arrière disponible.':`Impossible d’ouvrir la caméra${e?.name?' · '+e.name:''}`);}
+  }
+
+  async function stopLive(resetStatus=true){scanning=false;paused=false;busyNative=false;busyZXing=false;if(raf)cancelAnimationFrame(raf);raf=0;detector=null;torchOn=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}try{video.pause();}catch(_){}video.srcObject=null;placeholder?.classList.remove('hidden');startBtn.disabled=false;startBtn.classList.remove('hidden');stopBtn.classList.add('hidden');torchBtn?.classList.add('hidden');zoomWrap?.classList.add('hidden');resumeNotBefore=0;if(resetStatus)setStatus('Prêt · v2.8.3');}
 
   async function toggleTorch(){const track=stream?.getVideoTracks?.()[0];if(!track)return;torchOn=!torchOn;try{await track.applyConstraints({advanced:[{torch:torchOn}]});if(torchBtn)torchBtn.textContent=torchOn?'🔦 Lampe ON':'🔦 Lampe';}catch(_){}}
   async function applyZoom(){const track=stream?.getVideoTracks?.()[0];if(!track||!zoom)return;try{await track.applyConstraints({advanced:[{zoom:Number(zoom.value)}]});}catch(_){}}
+
+  // Neutralise explicitement le vieux onclick d'app.js pour ce bouton.
+  if(scanAgainBtn){
+    scanAgainBtn.onclick=null;
+    scanAgainBtn.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();resumeScan();},true);
+  }
 
   document.addEventListener('click',event=>{
     if(event.target?.closest?.('#startBtn')){event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();startLive();return;}
     if(event.target?.closest?.('#stopBtn')){event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();stopLive(true);return;}
     if(event.target?.closest?.('#torchBtn')){event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();toggleTorch();return;}
-    if(event.target?.closest?.('#scanAgainBtn')){event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();resultCard?.classList.add('hidden');unknownCard?.classList.add('hidden');startLive();return;}
+    if(event.target?.closest?.('#scanAgainBtn')){event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();resumeScan();return;}
     const nav=event.target?.closest?.('.nav-btn');if(nav&&nav.dataset.view!=='scanView'&&(scanning||paused))stopLive(false);
   },true);
 
