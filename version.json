@@ -1,6 +1,6 @@
 {
-  "version": "2.8.1",
-  "build": 281,
+  "version": "2.8.2",
+  "build": 282,
   "released": "2026-09-10",
-  "notes": "Sauvegarde, restauration et catalogue des codes déplacés derrière une icône Outils discrète dans l’en-tête"
+  "notes": "Correction du scan enchaîné sans réouverture de caméra et activation des codes Data Matrix Shrek 71053"
 }
