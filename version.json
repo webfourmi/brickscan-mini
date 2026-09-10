@@ -1,6 +1,6 @@
 {
-  "version": "2.8.2",
-  "build": 282,
+  "version": "2.8.3",
+  "build": 283,
   "released": "2026-09-10",
-  "notes": "Correction du scan enchaîné sans réouverture de caméra et activation des codes Data Matrix Shrek 71053"
+  "notes": "Correction du bouton Scanner une autre boîte avec reprise immédiate du flux caméra et anti-relecture temporaire du code précédent"
 }
