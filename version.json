@@ -1,6 +1,6 @@
 {
-  "version": "2.8.5",
-  "build": 285,
+  "version": "2.9.0",
+  "build": 290,
   "released": "2026-09-12",
-  "notes": "Retrait automatique de la wishlist dès qu’une minifigurine entre dans la collection"
+  "notes": "Bêta de reconnaissance visuelle : photo d’une minifigurine pour estimer sa série et proposer la figurine probable"
 }
