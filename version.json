@@ -1,6 +1,6 @@
 {
-  "version": "2.8.4",
-  "build": 284,
-  "released": "2026-09-10",
-  "notes": "Bouton Scanner une autre boîte placé sous la caméra et reprise du scan fiabilisée avec un seul gestionnaire"
+  "version": "2.8.5",
+  "build": 285,
+  "released": "2026-09-12",
+  "notes": "Retrait automatique de la wishlist dès qu’une minifigurine entre dans la collection"
 }
