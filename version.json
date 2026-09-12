@@ -1,6 +1,6 @@
 {
-  "version": "2.9.1",
-  "build": 291,
+  "version": "2.9.2",
+  "build": 292,
   "released": "2026-09-12",
-  "notes": "Le scan visuel utilise maintenant une caméra intégrée en direct dans BrickScan avec bouton Identifier cette figurine, sans ouvrir l’application Photo"
+  "notes": "Reconnaissance visuelle améliorée : analyse réelle de la zone cadrée et comparaison figurine par figurine pour les séries récentes, dont la Petite sorcière de la Série 29"
 }
