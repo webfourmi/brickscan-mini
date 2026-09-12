@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = '2.9.1';
+  const VERSION = '2.9.2';
   const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/+esm';
   const MODEL_ID = 'Xenova/clip-vit-base-patch32';
   const data = Array.isArray(window.MINIFIG_DATA) ? window.MINIFIG_DATA : [];
@@ -12,26 +12,81 @@
   let visualStream = null;
   let busy = false;
 
+  const VISUAL_HINTS = {
+    'series-29-1': 'soccer goalkeeper with sports gloves and a football',
+    'series-29-2': 'marine biologist scientist with ocean research equipment',
+    'series-29-3': 'musician holding a large brass tuba',
+    'series-29-4': 'fantasy unicorn elf with unicorn features',
+    'series-29-5': 'fantasy monster hunter adventurer with hunting gear',
+    'series-29-6': 'robotic Tyrannosaurus rex dinosaur character',
+    'series-29-7': 'chocolatier candy maker with chocolate accessories',
+    'series-29-8': 'person wearing a giant bubble tea cup costume',
+    'series-29-9': 'Bionicle fan cosplayer in mechanical fantasy armor',
+    'series-29-10': 'mysterious Japanese ronin samurai warrior',
+    'series-29-11': 'cute magical girl witch wearing a purple witch hat, light blue hair, pink bow, blue violet outfit, cat companion and cat-pattern socks',
+    'series-29-12': 'trash garbage monster made from rubbish and waste'
+  };
+
   function esc(value) {
-    return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
+    return String(value ?? '').replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','\"':'&quot;'}[c]));
+  }
+
+  function numericSeriesNumber(series) {
+    const match = String(series?.id || '').match(/^series-(\d+)$/);
+    return match ? Number(match[1]) : null;
+  }
+
+  function isModernSeries(series) {
+    const n = numericSeriesNumber(series);
+    return (Number.isFinite(n) && n >= 25) || ['dnd','spiderverse','shrek'].includes(series?.id);
+  }
+
+  function visualDescription(series, fig) {
+    if (VISUAL_HINTS[fig.id]) return VISUAL_HINTS[fig.id];
+    const english = String(fig.name_en || fig.name || '').trim();
+    if (series.id === 'series-28') return `person wearing a ${english} animal costume`;
+    return english;
+  }
+
+  function uniqueLabel(base, lookup) {
+    let label = base;
+    let suffix = 2;
+    while (lookup.has(label)) label = `${base} variant ${suffix++}`;
+    return label;
   }
 
   function buildPromptIndex() {
     const labels = [];
     const lookup = new Map();
+
     for (const series of data) {
       const figures = Array.isArray(series.figures) ? series.figures : [];
       if (!figures.length) continue;
-      const names = figures.map(fig => String(fig.name_en || fig.name || '').trim()).filter(Boolean);
-      for (let i = 0; i < names.length; i += 6) {
-        const chunk = names.slice(i, i + 6);
-        if (!chunk.length) continue;
-        let label = `LEGO collectible minifigures featuring ${chunk.join(', ')}`;
-        if (lookup.has(label)) label += ` from ${series.name}`;
+
+      if (isModernSeries(series)) {
+        for (const fig of figures) {
+          const name = String(fig.name_en || fig.name || '').trim();
+          const description = visualDescription(series, fig);
+          const base = `LEGO collectible minifigure ${description}; character ${name}; from ${series.name}`;
+          const label = uniqueLabel(base, lookup);
+          labels.push(label);
+          lookup.set(label, {series, fig});
+
+          if (fig.id === 'series-29-11') {
+            const alt = uniqueLabel('LEGO minifigure cute anime-style witch girl with purple hat, pale blue hair, pink bow and a small grey cat', lookup);
+            labels.push(alt);
+            lookup.set(alt, {series, fig});
+          }
+        }
+      } else {
+        const names = figures.slice(0, 10).map(fig => fig.name_en || fig.name).filter(Boolean);
+        const base = `LEGO collectible minifigure series featuring ${names.join(', ')}`;
+        const label = uniqueLabel(base, lookup);
         labels.push(label);
-        lookup.set(label, series);
+        lookup.set(label, {series, fig:null});
       }
     }
+
     return {labels, lookup};
   }
 
@@ -45,7 +100,7 @@
       .visual-scan-btn{border-color:#c7d2fe!important;background:#eef2ff!important;color:#3730a3!important}
       .visual-scan-card{margin-top:14px;border:1px solid #e5e7eb;border-radius:18px;background:#fff;padding:14px;display:grid;gap:12px}
       .visual-scan-card.hidden{display:none}.visual-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.visual-head h3{margin:2px 0 0;font-size:16px}.visual-beta{font-size:10px;font-weight:800;background:#ede9fe;color:#6d28d9;border-radius:999px;padding:5px 8px;white-space:nowrap}
-      .visual-live-wrap{position:relative;overflow:hidden;border-radius:16px;background:#111827;aspect-ratio:3/4;max-height:62vh}.visual-live-video{width:100%;height:100%;object-fit:cover;display:block}.visual-live-guide{position:absolute;inset:10% 18%;border:2px solid rgba(255,255,255,.9);border-radius:24px;box-shadow:0 0 0 999px rgba(0,0,0,.18);pointer-events:none}.visual-live-guide:after{content:'Place la figurine entière ici';position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);white-space:nowrap;color:#fff;background:rgba(17,24,39,.78);font-size:11px;font-weight:700;padding:5px 8px;border-radius:999px}
+      .visual-live-wrap{position:relative;overflow:hidden;border-radius:16px;background:#111827;aspect-ratio:3/4;max-height:62vh}.visual-live-video{width:100%;height:100%;object-fit:cover;display:block}.visual-live-guide{position:absolute;inset:10% 18%;border:2px solid rgba(255,255,255,.95);border-radius:24px;box-shadow:0 0 0 999px rgba(0,0,0,.28);pointer-events:none}.visual-live-guide:after{content:'Seul ce cadre sera analysé';position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);white-space:nowrap;color:#fff;background:rgba(17,24,39,.82);font-size:11px;font-weight:700;padding:5px 8px;border-radius:999px}
       .visual-status{font-size:12px;line-height:1.45;color:#4b5563}.visual-status strong{color:#111827}.visual-progress{height:6px;background:#e5e7eb;border-radius:999px;overflow:hidden}.visual-progress span{display:block;height:100%;width:0;background:#4f46e5;transition:width .2s ease}
       .visual-winner{border:1px solid #c7d2fe;background:#eef2ff;border-radius:15px;padding:13px}.visual-winner small{display:block;color:#6366f1;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.visual-winner strong{display:block;font-size:18px;margin-top:3px;color:#312e81}.visual-winner p{margin:5px 0 0;font-size:12px;color:#4b5563}
       .visual-alternatives{display:grid;gap:7px}.visual-alt{display:grid;grid-template-columns:minmax(0,1fr) 72px;gap:9px;align-items:center;font-size:12px}.visual-alt-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.visual-alt-bar{height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden}.visual-alt-bar span{display:block;height:100%;background:#818cf8}
@@ -69,12 +124,12 @@
     card.id = 'visualScanCard';
     card.className = 'visual-scan-card hidden';
     card.innerHTML = `
-      <div class="visual-head"><div><div class="eyebrow">RECONNAISSANCE VISUELLE</div><h3>De quelle série vient cette figurine ?</h3></div><span class="visual-beta">BÊTA</span></div>
+      <div class="visual-head"><div><div class="eyebrow">RECONNAISSANCE VISUELLE</div><h3>De quelle série vient cette figurine ?</h3></div><span class="visual-beta">BÊTA 2.9.2</span></div>
       <div class="visual-live-wrap"><video id="visualVideo" class="visual-live-video" autoplay playsinline muted></video><div class="visual-live-guide"></div></div>
-      <div id="visualStatus" class="visual-status">Cadre la figurine entière, de face, sur un fond assez uni.</div>
+      <div id="visualStatus" class="visual-status">Cadre la figurine entière dans le rectangle blanc, de face, avec le moins de décor possible autour.</div>
       <div id="visualProgress" class="visual-progress hidden"><span></span></div>
       <div id="visualResults" class="hidden"></div>
-      <div class="visual-note">L’analyse se fait à partir du flux caméra affiché ici. Aucune photo n’est enregistrée par BrickScan. Au premier essai, le modèle visuel doit être téléchargé.</div>
+      <div class="visual-note">La V2.9.2 analyse uniquement la zone du cadre blanc et compare maintenant les figurines récentes une par une. Aucune photo n’est enregistrée par BrickScan.</div>
       <div class="visual-actions"><button id="visualAnalyzeBtn" type="button" class="btn primary visual-analyze-btn">✨ Identifier cette figurine</button><button id="visualCloseBtn" type="button" class="btn ghost">Fermer</button></div>`;
     scannerCard.after(card);
 
@@ -122,7 +177,7 @@
     if (visualStream?.getVideoTracks?.().some(track => track.readyState === 'live')) {
       if (video.srcObject !== visualStream) video.srcObject = visualStream;
       try { await video.play(); } catch (_) {}
-      setStatus('<strong>Caméra prête.</strong> Cadre la figurine puis touche « Identifier cette figurine ».');
+      setStatus('<strong>Caméra prête.</strong> Place toute la figurine dans le cadre blanc puis lance l’analyse.');
       return;
     }
 
@@ -141,9 +196,14 @@
       video.muted = true;
       video.setAttribute('playsinline','');
       await video.play();
-      setStatus('<strong>Caméra prête.</strong> Cadre la figurine entière puis lance l’identification.');
+      const track = visualStream.getVideoTracks?.()[0];
+      const caps = track?.getCapabilities?.() || {};
+      if (Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) {
+        try { await track.applyConstraints({advanced:[{focusMode:'continuous'}]}); } catch (_) {}
+      }
+      setStatus('<strong>Caméra prête.</strong> Place toute la figurine dans le cadre blanc, de face.');
     } catch (error) {
-      console.error('BrickScan V2.9.1 caméra visuelle', error);
+      console.error('BrickScan V2.9.2 caméra visuelle', error);
       visualStream = null;
       setStatus(error?.name === 'NotAllowedError' ? '<strong>Accès caméra refusé.</strong> Autorise la caméra dans Chrome.' : '<strong>Impossible d’ouvrir la caméra.</strong>');
     }
@@ -168,14 +228,42 @@
 
     const sourceW = video.videoWidth;
     const sourceH = video.videoHeight;
-    const maxSide = 768;
-    const scale = Math.min(1, maxSide / Math.max(sourceW, sourceH));
+    const displayW = Math.max(1, video.clientWidth || sourceW);
+    const displayH = Math.max(1, video.clientHeight || sourceH);
+
+    // Le flux est affiché avec object-fit: cover. On reconstruit donc la zone source
+    // réellement située derrière le guide blanc (inset 10% vertical, 18% horizontal).
+    const coverScale = Math.max(displayW / sourceW, displayH / sourceH);
+    const renderedW = sourceW * coverScale;
+    const renderedH = sourceH * coverScale;
+    const cropOffsetX = (renderedW - displayW) / 2;
+    const cropOffsetY = (renderedH - displayH) / 2;
+
+    const guideX = displayW * 0.18;
+    const guideY = displayH * 0.10;
+    const guideW = displayW * 0.64;
+    const guideH = displayH * 0.80;
+
+    let sx = (guideX + cropOffsetX) / coverScale;
+    let sy = (guideY + cropOffsetY) / coverScale;
+    let sw = guideW / coverScale;
+    let sh = guideH / coverScale;
+
+    sx = Math.max(0, Math.min(sourceW - 1, sx));
+    sy = Math.max(0, Math.min(sourceH - 1, sy));
+    sw = Math.max(1, Math.min(sourceW - sx, sw));
+    sh = Math.max(1, Math.min(sourceH - sy, sh));
+
+    const maxSide = 720;
+    const resizeScale = Math.min(1, maxSide / Math.max(sw, sh));
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(224, Math.round(sourceW * scale));
-    canvas.height = Math.max(224, Math.round(sourceH * scale));
+    canvas.width = Math.max(224, Math.round(sw * resizeScale));
+    canvas.height = Math.max(224, Math.round(sh * resizeScale));
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
     return canvas;
   }
 
@@ -212,43 +300,29 @@
   function aggregateSeries(results) {
     const bySeries = new Map();
     for (const item of Array.isArray(results) ? results : []) {
-      const series = promptIndex.lookup.get(item.label);
-      if (!series) continue;
-      const current = bySeries.get(series.id);
+      const meta = promptIndex.lookup.get(item.label);
+      if (!meta?.series) continue;
       const score = Number(item.score) || 0;
-      if (!current || score > current.score) bySeries.set(series.id, {series, score});
+      const current = bySeries.get(meta.series.id);
+      if (!current || score > current.score) {
+        bySeries.set(meta.series.id, {
+          series: meta.series,
+          score,
+          figGuess: meta.fig ? {fig:meta.fig, score} : null
+        });
+      }
     }
     return [...bySeries.values()].sort((a,b) => b.score - a.score);
   }
 
   function confidenceText(top, second) {
     const ratio = top?.score / Math.max(second?.score || 0.000001, 0.000001);
-    if (!top || top.score < 0.02 || ratio < 1.12) return 'Confiance faible';
-    if (ratio >= 1.65) return 'Confiance forte';
+    if (!top || top.score < 0.01 || ratio < 1.08) return 'Confiance faible';
+    if (ratio >= 1.45) return 'Confiance forte';
     return 'Confiance moyenne';
   }
 
-  async function identifyFigureInsideSeries(model, image, series) {
-    const figures = Array.isArray(series?.figures) ? series.figures : [];
-    if (!figures.length) return null;
-    const labelMap = new Map();
-    const labels = figures.map((fig, index) => {
-      let label = `LEGO minifigure ${fig.name_en || fig.name}`;
-      if (labelMap.has(label)) label += ` character ${index + 1}`;
-      labelMap.set(label, fig);
-      return label;
-    });
-    try {
-      const output = await model(image, labels, {hypothesis_template:'This is a photo of {}'});
-      const best = Array.isArray(output) ? output[0] : null;
-      const fig = best ? labelMap.get(best.label) : null;
-      return fig ? {fig, score:Number(best.score)||0} : null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function renderResults(ranked, figGuess) {
+  function renderResults(ranked) {
     const box = document.getElementById('visualResults');
     if (!box || !ranked.length) return;
     const top = ranked[0];
@@ -256,6 +330,7 @@
     const shown = ranked.slice(0,3);
     const max = Math.max(top.score, 0.000001);
     const confidence = confidenceText(top, second);
+    const figGuess = top.figGuess;
     box.innerHTML = `
       <div class="visual-winner">
         <small>Série la plus probable · ${esc(confidence)}</small>
@@ -263,7 +338,7 @@
         <p>${top.series.set ? `Set ${esc(top.series.set)}` : ''}${top.series.year ? ` · ${esc(top.series.year)}` : ''}${figGuess ? ` · Figurine probable : <b>${esc(figGuess.fig.name)}</b>` : ''}</p>
       </div>
       <div class="visual-alternatives">
-        ${shown.map((item,index) => `<div class="visual-alt"><span class="visual-alt-name">${index===0?'✓ ':''}${esc(item.series.name)}</span><span class="visual-alt-bar"><span style="width:${Math.max(8, Math.round(item.score/max*100))}%"></span></span></div>`).join('')}
+        ${shown.map((item,index) => `<div class="visual-alt"><span class="visual-alt-name">${index===0?'✓ ':''}${esc(item.series.name)}${item.figGuess ? ` · ${esc(item.figGuess.fig.name)}` : ''}</span><span class="visual-alt-bar"><span style="width:${Math.max(8, Math.round(item.score/max*100))}%"></span></span></div>`).join('')}
       </div>`;
     box.classList.remove('hidden');
   }
@@ -285,23 +360,22 @@
     }
     results?.classList.add('hidden');
     if (results) results.innerHTML = '';
-    setStatus('<strong>Préparation de la reconnaissance…</strong>');
+    setStatus('<strong>Analyse de la zone cadrée…</strong>');
     setProgress(2, true);
 
     try {
       const model = await loadClassifier();
-      setStatus(`<strong>Analyse de la figurine…</strong><br>Comparaison avec ${data.length} séries du catalogue.`);
+      setStatus(`<strong>Comparaison visuelle…</strong><br>${promptIndex.labels.length} profils visuels sont testés.`);
       setProgress(94, true);
       const output = await model(frame, promptIndex.labels, {hypothesis_template:'This is a photo of {}'});
       const ranked = aggregateSeries(output);
       if (!ranked.length) throw new Error('Aucune série candidate');
-      const figGuess = await identifyFigureInsideSeries(model, frame, ranked[0].series);
       setProgress(100, true);
-      renderResults(ranked, figGuess);
-      setStatus(`<strong>Analyse terminée.</strong> ${confidenceText(ranked[0], ranked[1])}. Tu peux recadrer et relancer immédiatement.`);
+      renderResults(ranked);
+      setStatus(`<strong>Analyse terminée.</strong> ${confidenceText(ranked[0], ranked[1])}. Pour confirmer, tu peux tourner légèrement la figurine et relancer.`);
       setTimeout(() => setProgress(0, false), 700);
     } catch (error) {
-      console.error('BrickScan V2.9.1 visual scan', error);
+      console.error('BrickScan V2.9.2 visual scan', error);
       setProgress(0, false);
       setStatus('<strong>Reconnaissance visuelle indisponible.</strong><br>Vérifie la connexion Internet pour le premier chargement du modèle, puis réessaie.');
     } finally {
