@@ -1,6 +1,6 @@
 {
-  "version": "2.9.2",
-  "build": 292,
+  "version": "2.10.0",
+  "build": 210,
   "released": "2026-09-12",
-  "notes": "Reconnaissance visuelle améliorée : analyse réelle de la zone cadrée et comparaison figurine par figurine pour les séries récentes, dont la Petite sorcière de la Série 29"
+  "notes": "Ajout de deux listes dans Collection : doubles et figurines avec accessoires manquants, avec compteurs, détail par exemplaire et export CSV"
 }
