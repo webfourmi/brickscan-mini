@@ -1,8 +1,8 @@
 (() => {
   const data = Array.isArray(window.MINIFIG_DATA) ? window.MINIFIG_DATA : [];
   const collectionView = document.getElementById('collectionView');
-  const stats = document.getElementById('collectionStats');
-  if (!collectionView || !stats || !data.length) return;
+  const sectionHead = collectionView?.querySelector('.section-head');
+  if (!collectionView || !sectionHead || !data.length) return;
 
   const figIndex = new Map();
   for (const series of data) {
@@ -22,7 +22,7 @@
     'restaurer':'À restaurer'
   };
 
-  let activeList = 'duplicates';
+  let activeList = null;
 
   function loadArray(key) {
     try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value : []; }
@@ -93,31 +93,32 @@
   }
 
   function injectStyles() {
-    if (document.getElementById('v210Styles')) return;
+    document.getElementById('v210Styles')?.remove();
     const style = document.createElement('style');
     style.id = 'v210Styles';
     style.textContent = `
-      .collection-lists-card{margin:12px 0 14px;padding:14px;border:1px solid #e5e7eb;border-radius:17px;background:#fff;display:grid;gap:11px}.collection-lists-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.collection-lists-head strong{display:block;font-size:14px}.collection-lists-head small{display:block;margin-top:2px;color:#6b7280;font-size:10px}.collection-list-buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}.collection-list-btn{border:1px solid #e5e7eb;background:#f9fafb;border-radius:14px;padding:11px;text-align:left;font:inherit;color:#111827}.collection-list-btn strong{display:block;font-size:13px}.collection-list-btn span{display:block;margin-top:3px;color:#6b7280;font-size:11px}.collection-list-btn .list-count{float:right;display:inline-grid;place-items:center;min-width:27px;height:27px;padding:0 7px;border-radius:999px;background:#111827;color:#fff;font-size:11px;font-weight:900}
-      .collection-list-sheet{position:fixed;inset:0;z-index:1200;display:grid;align-items:end}.collection-list-sheet.hidden{display:none}.collection-list-backdrop{position:absolute;inset:0;background:rgba(17,24,39,.48)}.collection-list-panel{position:relative;z-index:1;max-height:82vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.18)}.collection-list-sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;position:sticky;top:-18px;background:#fff;padding:4px 0 12px;z-index:2}.collection-list-sheet-head h2{margin:3px 0 0;font-size:20px}.collection-list-close{border:0;background:#f3f4f6;width:36px;height:36px;border-radius:50%;font-size:16px}.collection-list-toolbar{display:flex;gap:8px;margin-bottom:12px}.collection-list-toolbar .btn{flex:1}.collection-list-rows{display:grid;gap:9px}.collection-list-row{width:100%;box-sizing:border-box;border:1px solid #e5e7eb;background:#fff;border-radius:14px;padding:12px;text-align:left;font:inherit;color:#111827}.collection-list-row:active{background:#f9fafb}.collection-list-row-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.collection-list-row strong{font-size:13px}.collection-list-row small{display:block;color:#6b7280;margin-top:3px;font-size:10px}.collection-list-badge{flex:0 0 auto;border-radius:999px;background:#eef2ff;color:#3730a3;padding:5px 8px;font-size:10px;font-weight:900}.collection-list-detail{margin-top:9px;padding-top:9px;border-top:1px solid #f3f4f6;font-size:11px;color:#4b5563;line-height:1.45}.collection-list-detail b{color:#111827}.collection-list-copy{display:block;margin-top:4px}.collection-list-empty{padding:26px 14px;text-align:center;border:1px dashed #d1d5db;border-radius:14px;color:#6b7280;font-size:12px}.collection-list-summary{font-size:11px;color:#6b7280;margin-bottom:10px}
-      @media(max-width:420px){.collection-list-buttons{grid-template-columns:1fr}}
+      .collection-lists-open{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}.collection-lists-open .lists-total{display:none;min-width:21px;height:21px;padding:0 6px;border-radius:999px;background:#111827;color:#fff;font-size:10px;font-weight:900;place-items:center}.collection-lists-open .lists-total.has-items{display:inline-grid}
+      .collection-list-sheet{position:fixed;inset:0;z-index:1200;display:grid;align-items:end}.collection-list-sheet.hidden{display:none}.collection-list-backdrop{position:absolute;inset:0;background:rgba(17,24,39,.48)}.collection-list-panel{position:relative;z-index:1;max-height:82vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.18)}
+      .collection-list-sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;position:sticky;top:-18px;background:#fff;padding:4px 0 12px;z-index:2}.collection-list-title-wrap{display:flex;align-items:flex-start;gap:8px}.collection-list-back-btn{border:0;background:#f3f4f6;border-radius:10px;padding:7px 9px;font:inherit;font-size:11px;font-weight:800;color:#374151}.collection-list-sheet-head h2{margin:3px 0 0;font-size:20px}.collection-list-close{border:0;background:#f3f4f6;width:36px;height:36px;border-radius:50%;font-size:16px}
+      .collection-list-menu{display:grid;grid-template-columns:1fr 1fr;gap:10px}.collection-list-menu-btn{border:1px solid #e5e7eb;background:#f9fafb;border-radius:16px;padding:15px;text-align:left;font:inherit;color:#111827}.collection-list-menu-btn strong{display:block;font-size:14px}.collection-list-menu-btn small{display:block;margin-top:4px;color:#6b7280;font-size:10px;line-height:1.4}.collection-list-menu-count{float:right;display:inline-grid;place-items:center;min-width:29px;height:29px;padding:0 8px;border-radius:999px;background:#111827;color:#fff;font-size:11px;font-weight:900}
+      .collection-list-toolbar{display:flex;gap:8px;margin-bottom:12px}.collection-list-toolbar.hidden{display:none}.collection-list-toolbar .btn{flex:1}.collection-list-rows{display:grid;gap:9px}.collection-list-row{width:100%;box-sizing:border-box;border:1px solid #e5e7eb;background:#fff;border-radius:14px;padding:12px;text-align:left;font:inherit;color:#111827}.collection-list-row:active{background:#f9fafb}.collection-list-row-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.collection-list-row strong{font-size:13px}.collection-list-row small{display:block;color:#6b7280;margin-top:3px;font-size:10px}.collection-list-badge{flex:0 0 auto;border-radius:999px;background:#eef2ff;color:#3730a3;padding:5px 8px;font-size:10px;font-weight:900}.collection-list-detail{margin-top:9px;padding-top:9px;border-top:1px solid #f3f4f6;font-size:11px;color:#4b5563;line-height:1.45}.collection-list-detail b{color:#111827}.collection-list-copy{display:block;margin-top:4px}.collection-list-empty{padding:26px 14px;text-align:center;border:1px dashed #d1d5db;border-radius:14px;color:#6b7280;font-size:12px}.collection-list-summary{font-size:11px;color:#6b7280;margin-bottom:10px}.collection-list-summary.hidden{display:none}
+      @media(max-width:420px){.collection-list-menu{grid-template-columns:1fr}}
     `;
     document.head.appendChild(style);
   }
 
   function injectUi() {
-    if (document.getElementById('collectionListsCard')) return;
+    document.getElementById('collectionListsCard')?.remove();
+    document.getElementById('collectionListsBtn')?.remove();
+    document.getElementById('collectionListSheet')?.remove();
     injectStyles();
 
-    const card = document.createElement('section');
-    card.id = 'collectionListsCard';
-    card.className = 'collection-lists-card';
-    card.innerHTML = `
-      <div class="collection-lists-head"><div><strong>📋 Mes listes</strong><small>Doubles et accessoires à compléter</small></div></div>
-      <div class="collection-list-buttons">
-        <button id="duplicatesListBtn" class="collection-list-btn" type="button"><span id="duplicatesCount" class="list-count">0</span><strong>♻ Doubles</strong><span>Figurines en plusieurs exemplaires</span></button>
-        <button id="missingAccessoriesListBtn" class="collection-list-btn" type="button"><span id="missingAccessoriesCount" class="list-count">0</span><strong>🧩 Accessoires manquants</strong><span>Exemplaires incomplets à compléter</span></button>
-      </div>`;
-    stats.insertAdjacentElement('afterend', card);
+    const button = document.createElement('button');
+    button.id = 'collectionListsBtn';
+    button.type = 'button';
+    button.className = 'btn secondary collection-lists-open';
+    button.innerHTML = '📋 Listes <span id="collectionListsTotal" class="lists-total">0</span>';
+    sectionHead.appendChild(button);
 
     const sheet = document.createElement('section');
     sheet.id = 'collectionListSheet';
@@ -126,46 +127,96 @@
     sheet.innerHTML = `
       <div id="collectionListBackdrop" class="collection-list-backdrop"></div>
       <div class="collection-list-panel" role="dialog" aria-modal="true" aria-labelledby="collectionListTitle">
-        <div class="collection-list-sheet-head"><div><div id="collectionListEyebrow" class="eyebrow">MES LISTES</div><h2 id="collectionListTitle"></h2></div><button id="collectionListClose" class="collection-list-close" type="button" aria-label="Fermer">✕</button></div>
-        <div class="collection-list-toolbar"><button id="collectionListExport" class="btn secondary" type="button">⬇️ Exporter CSV</button></div>
-        <div id="collectionListSummary" class="collection-list-summary"></div>
+        <div class="collection-list-sheet-head">
+          <div class="collection-list-title-wrap"><button id="collectionListBack" class="collection-list-back-btn hidden" type="button">← Listes</button><div><div class="eyebrow">MA COLLECTION</div><h2 id="collectionListTitle">📋 Mes listes</h2></div></div>
+          <button id="collectionListClose" class="collection-list-close" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <div id="collectionListToolbar" class="collection-list-toolbar hidden"><button id="collectionListExport" class="btn secondary" type="button">⬇️ Exporter CSV</button></div>
+        <div id="collectionListSummary" class="collection-list-summary hidden"></div>
         <div id="collectionListRows" class="collection-list-rows"></div>
       </div>`;
     document.body.appendChild(sheet);
 
-    document.getElementById('duplicatesListBtn')?.addEventListener('click', () => openList('duplicates'));
-    document.getElementById('missingAccessoriesListBtn')?.addEventListener('click', () => openList('missing'));
+    button.addEventListener('click', openMenu);
+    document.getElementById('collectionListBack')?.addEventListener('click', renderMenu);
     document.getElementById('collectionListClose')?.addEventListener('click', closeList);
     document.getElementById('collectionListBackdrop')?.addEventListener('click', closeList);
     document.getElementById('collectionListExport')?.addEventListener('click', exportActiveList);
     document.getElementById('collectionListRows')?.addEventListener('click', event => {
+      const menuBtn = event.target.closest('[data-list-type]');
+      if (menuBtn) {
+        openList(menuBtn.dataset.listType);
+        return;
+      }
       const row = event.target.closest('[data-fig-id]');
-      if (!row) return;
-      openFigure(row.dataset.figId);
+      if (row) openFigure(row.dataset.figId);
     });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !sheet.classList.contains('hidden')) closeList();
     });
   }
 
-  function refreshCounts() {
+  function getCounts() {
     const duplicates = duplicateRows();
     const missing = missingRows();
-    const duplicateExtras = duplicates.reduce((sum,row) => sum + row.duplicateCount, 0);
-    const d = document.getElementById('duplicatesCount');
-    const m = document.getElementById('missingAccessoriesCount');
-    if (d) d.textContent = String(duplicateExtras);
-    if (m) m.textContent = String(missing.length);
-    if (!document.getElementById('collectionListSheet')?.classList.contains('hidden')) renderActiveList();
+    return {
+      duplicates,
+      missing,
+      duplicateExtras:duplicates.reduce((sum,row) => sum + row.duplicateCount, 0)
+    };
+  }
+
+  function refreshCounts() {
+    const counts = getCounts();
+    const total = counts.duplicateExtras + counts.missing.length;
+    const badge = document.getElementById('collectionListsTotal');
+    if (badge) {
+      badge.textContent = String(total);
+      badge.classList.toggle('has-items', total > 0);
+    }
+    if (!document.getElementById('collectionListSheet')?.classList.contains('hidden')) {
+      activeList ? renderActiveList() : renderMenu();
+    }
+  }
+
+  function showSheet() {
+    const sheet = document.getElementById('collectionListSheet');
+    if (!sheet) return false;
+    sheet.classList.remove('hidden');
+    sheet.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+    return true;
+  }
+
+  function openMenu() {
+    activeList = null;
+    if (!showSheet()) return;
+    renderMenu();
+  }
+
+  function renderMenu() {
+    activeList = null;
+    const counts = getCounts();
+    const title = document.getElementById('collectionListTitle');
+    const rows = document.getElementById('collectionListRows');
+    const back = document.getElementById('collectionListBack');
+    const toolbar = document.getElementById('collectionListToolbar');
+    const summary = document.getElementById('collectionListSummary');
+    if (!title || !rows) return;
+    title.textContent = '📋 Mes listes';
+    back?.classList.add('hidden');
+    toolbar?.classList.add('hidden');
+    summary?.classList.add('hidden');
+    rows.innerHTML = `
+      <div class="collection-list-menu">
+        <button class="collection-list-menu-btn" type="button" data-list-type="duplicates"><span class="collection-list-menu-count">${counts.duplicateExtras}</span><strong>♻ Doubles</strong><small>Figurines possédées en plusieurs exemplaires.</small></button>
+        <button class="collection-list-menu-btn" type="button" data-list-type="missing"><span class="collection-list-menu-count">${counts.missing.length}</span><strong>🧩 Accessoires manquants</strong><small>Exemplaires dont la fiche indique une pièce ou un accessoire absent.</small></button>
+      </div>`;
   }
 
   function openList(type) {
     activeList = type;
-    const sheet = document.getElementById('collectionListSheet');
-    if (!sheet) return;
-    sheet.classList.remove('hidden');
-    sheet.setAttribute('aria-hidden','false');
-    document.body.style.overflow = 'hidden';
+    if (!showSheet()) return;
     renderActiveList();
   }
 
@@ -175,10 +226,10 @@
     sheet.classList.add('hidden');
     sheet.setAttribute('aria-hidden','true');
     document.body.style.overflow = '';
+    activeList = null;
   }
 
   function duplicateDetail(row) {
-    if (!row.extras.length) return '';
     return row.extras.map(extra => {
       const bits = [`Exemplaire ${extra.copy}`, conditionLabels[extra.condition] || extra.condition || 'Comme neuf'];
       if (extra.missing) bits.push(`manque : ${extra.missing}`);
@@ -190,7 +241,13 @@
     const rowsBox = document.getElementById('collectionListRows');
     const title = document.getElementById('collectionListTitle');
     const summary = document.getElementById('collectionListSummary');
+    const back = document.getElementById('collectionListBack');
+    const toolbar = document.getElementById('collectionListToolbar');
     if (!rowsBox || !title || !summary) return;
+
+    back?.classList.remove('hidden');
+    toolbar?.classList.remove('hidden');
+    summary.classList.remove('hidden');
 
     if (activeList === 'duplicates') {
       const rows = duplicateRows();
@@ -201,7 +258,7 @@
         <button type="button" class="collection-list-row" data-fig-id="${esc(row.id)}">
           <div class="collection-list-row-head"><div><strong>${esc(row.fig.name)}</strong><small>${esc(row.fig.seriesName)}${row.fig.set ? ` · set ${esc(row.fig.set)}` : ''}</small></div><span class="collection-list-badge">${row.qty} ex. · +${row.duplicateCount}</span></div>
           ${row.extras.length ? `<div class="collection-list-detail">${duplicateDetail(row)}</div>` : ''}
-        </button>`).join('') : '<div class="collection-list-empty">Pas encore de doubles. Le jour où un clone apparaît, il atterrira ici. 🧱</div>';
+        </button>`).join('') : '<div class="collection-list-empty">Aucun doublon dans la collection.</div>';
     } else {
       const rows = missingRows();
       title.textContent = '🧩 Accessoires manquants';
@@ -210,22 +267,20 @@
         <button type="button" class="collection-list-row" data-fig-id="${esc(row.id)}">
           <div class="collection-list-row-head"><div><strong>${esc(row.fig.name)}</strong><small>${esc(row.fig.seriesName)}${row.fig.set ? ` · set ${esc(row.fig.set)}` : ''} · exemplaire ${row.copy}</small></div><span class="collection-list-badge">🧩</span></div>
           <div class="collection-list-detail"><b>Manque :</b> ${esc(row.missing)}${row.text ? `<span class="collection-list-copy">Note : ${esc(row.text)}</span>` : ''}</div>
-        </button>`).join('') : '<div class="collection-list-empty">Tout ce qui est renseigné dans la collection est complet. ✨</div>';
+        </button>`).join('') : '<div class="collection-list-empty">Aucun accessoire manquant renseigné.</div>';
     }
   }
 
   function openFigure(id) {
     closeList();
-    const cards = [...document.querySelectorAll('#collectionGrid .fig-card[data-id]')];
-    const card = cards.find(item => item.dataset.id === id);
+    const card = [...document.querySelectorAll('#collectionGrid .fig-card[data-id]')].find(item => item.dataset.id === id);
     if (card) {
       card.click();
       return;
     }
     const fig = figIndex.get(id);
-    if (!fig) return;
     const search = document.getElementById('collectionSearch');
-    if (search) {
+    if (fig && search) {
       search.value = fig.name;
       search.dispatchEvent(new Event('input', {bubbles:true}));
     }
@@ -255,7 +310,7 @@
         row.fig.seriesName, row.fig.set || '', row.fig.name, row.qty, row.duplicateCount,
         row.extras.map(extra => `Exemplaire ${extra.copy}: ${conditionLabels[extra.condition] || extra.condition}${extra.missing ? `; manque ${extra.missing}` : ''}`).join(' | ')
       ]));
-    } else {
+    } else if (activeList === 'missing') {
       const rows = missingRows();
       downloadCsv('brickscan-accessoires-manquants.csv', ['Série','Set','Figurine','Exemplaire','Accessoires manquants','État','Note'], rows.map(row => [
         row.fig.seriesName, row.fig.set || '', row.fig.name, row.copy, row.missing, conditionLabels[row.condition] || row.condition, row.text
