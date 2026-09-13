@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = '2.8.4';
+  const VERSION = '2.11.0';
   const ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js';
   const $ = id => document.getElementById(id);
   const video = $('video');
@@ -14,6 +14,8 @@
   const nativeScanner = $('nativeScanner');
   const fallbackScanner = $('fallbackScanner');
   const resultCard = $('resultCard');
+  const resultName = $('resultName');
+  const resultSeries = $('resultSeries');
   const unknownCard = $('unknownCard');
   const manualInput = $('manualInput');
   const manualBtn = $('manualBtn');
@@ -34,8 +36,13 @@
   let cropPass = 0;
   let raf = 0;
   let lastAcceptedRaw = '';
+  let lastDecodedAt = 0;
+  let acceptedNeedsClear = false;
   let ignoreSameUntil = 0;
   let resumeNotBefore = 0;
+  let batchMode = sessionStorage.getItem('brickscan-batch-mode') === '1';
+  let batchCount = 0;
+  let batchResumeTimer = null;
 
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', {willReadFrequently:true});
@@ -53,12 +60,139 @@
   }
 
   function showAgainButton() {
+    if (batchMode) { hideAgainButton(); return; }
     placeAgainButton();
     scanAgainBtn.classList.remove('hidden');
   }
 
   function hideAgainButton() {
     scanAgainBtn.classList.add('hidden');
+  }
+
+  function injectBatchUi() {
+    if ($('batchScanBtn')) return;
+    const actions = startBtn.closest('.actions-row') || startBtn.parentElement;
+    if (!actions) return;
+
+    const style = document.createElement('style');
+    style.id = 'batchScanStyles';
+    style.textContent = `
+      .batch-scan-btn.batch-active{background:#111827!important;color:#fff!important;border-color:#111827!important}
+      .batch-scan-strip{margin-top:9px;padding:10px 11px;border-radius:13px;background:#eef2ff;border:1px solid #c7d2fe;color:#312e81;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px}.batch-scan-strip.hidden{display:none}.batch-scan-strip strong{font-size:12px}.batch-scan-last{margin-top:8px;padding:11px 12px;border-radius:13px;background:#dcfce7;border:1px solid #86efac;color:#166534;display:grid;gap:2px}.batch-scan-last.hidden{display:none}.batch-scan-last strong{font-size:13px}.batch-scan-last small{font-size:10px;color:#15803d}.batch-scan-pulse{animation:batchPulse .45s ease}@keyframes batchPulse{0%{transform:scale(.98);opacity:.55}100%{transform:scale(1);opacity:1}}
+    `;
+    document.head.appendChild(style);
+
+    const btn = document.createElement('button');
+    btn.id = 'batchScanBtn';
+    btn.type = 'button';
+    btn.className = 'btn secondary batch-scan-btn';
+    btn.textContent = '🔁 Scan en série';
+    actions.appendChild(btn);
+
+    const strip = document.createElement('div');
+    strip.id = 'batchScanStrip';
+    strip.className = 'batch-scan-strip hidden';
+    strip.innerHTML = '<span>🔁 <strong>Scan en série</strong></span><span id="batchScanCount">0 scannée</span>';
+
+    const last = document.createElement('div');
+    last.id = 'batchScanLast';
+    last.className = 'batch-scan-last hidden';
+    last.innerHTML = '<strong id="batchLastName"></strong><small id="batchLastSeries"></small>';
+
+    if (status) {
+      status.insertAdjacentElement('afterend', strip);
+      strip.insertAdjacentElement('afterend', last);
+    } else {
+      actions.insertAdjacentElement('afterend', strip);
+      strip.insertAdjacentElement('afterend', last);
+    }
+
+    btn.addEventListener('click', async event => {
+      event.preventDefault();
+      if (batchMode) {
+        setBatchMode(false);
+        await stopLive(true);
+        return;
+      }
+      setBatchMode(true);
+      resultCard?.classList.add('hidden');
+      unknownCard?.classList.add('hidden');
+      nativeScanner?.scrollIntoView({behavior:'smooth', block:'center'});
+      await startLive();
+      if (stream) setStatus('Scan en série · présente la première boîte');
+    });
+
+    updateBatchUi();
+  }
+
+  function setBatchMode(value) {
+    batchMode = Boolean(value);
+    sessionStorage.setItem('brickscan-batch-mode', batchMode ? '1' : '0');
+    if (!batchMode) {
+      clearTimeout(batchResumeTimer);
+      batchResumeTimer = null;
+      batchCount = 0;
+      $('batchScanLast')?.classList.add('hidden');
+    }
+    updateBatchUi();
+  }
+
+  function updateBatchUi() {
+    const btn = $('batchScanBtn');
+    const strip = $('batchScanStrip');
+    const count = $('batchScanCount');
+    if (btn) {
+      btn.textContent = batchMode ? '⏹ Terminer la série' : '🔁 Scan en série';
+      btn.classList.toggle('batch-active', batchMode);
+      btn.classList.toggle('primary', batchMode);
+      btn.classList.toggle('secondary', !batchMode);
+    }
+    strip?.classList.toggle('hidden', !batchMode);
+    if (count) count.textContent = `${batchCount} scannée${batchCount > 1 ? 's' : ''}`;
+    if (batchMode) hideAgainButton();
+  }
+
+  function showBatchResult() {
+    batchCount += 1;
+    const box = $('batchScanLast');
+    const name = $('batchLastName');
+    const series = $('batchLastSeries');
+    if (name) name.textContent = `✓ ${resultName?.textContent?.trim() || 'Figurine identifiée'}`;
+    if (series) series.textContent = resultSeries?.textContent?.trim() || 'Prête pour la suivante';
+    if (box) {
+      box.classList.remove('hidden');
+      box.classList.remove('batch-scan-pulse');
+      void box.offsetWidth;
+      box.classList.add('batch-scan-pulse');
+    }
+    updateBatchUi();
+  }
+
+  function scheduleBatchResume() {
+    clearTimeout(batchResumeTimer);
+    const acceptedAt = Date.now();
+    resumeNotBefore = acceptedAt + 850;
+    ignoreSameUntil = acceptedAt + 850;
+    setStatus('Identifiée ✓ · retire la boîte et présente la suivante');
+
+    setTimeout(() => {
+      if (!batchMode) return;
+      resultCard?.classList.add('hidden');
+      unknownCard?.classList.add('hidden');
+      nativeScanner?.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 90);
+
+    batchResumeTimer = setTimeout(async () => {
+      batchResumeTimer = null;
+      if (!batchMode) return;
+      const track = stream?.getVideoTracks?.()[0];
+      if (!stream || track?.readyState !== 'live') {
+        await startLive();
+      } else {
+        beginLoop();
+      }
+      if (batchMode && stream) setStatus(`Scan en série · ${batchCount} scannée${batchCount > 1 ? 's' : ''} · présente la suivante`);
+    }, 900);
   }
 
   function loadZXing() {
@@ -166,6 +300,14 @@
     scanning = false;
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
+
+    if (batchMode) {
+      hideAgainButton();
+      showBatchResult();
+      scheduleBatchResume();
+      return;
+    }
+
     showAgainButton();
     setStatus('Code identifié ✓ · prêt pour le suivant');
   }
@@ -174,13 +316,23 @@
     const text = String(raw || '').trim();
     if (!text) return false;
     const now = Date.now();
+    const gapSinceDecoded = lastDecodedAt ? now - lastDecodedAt : Infinity;
+    lastDecodedAt = now;
+
     if (now < resumeNotBefore) return false;
-    if (text === lastAcceptedRaw && now < ignoreSameUntil) return false;
+    if (text === lastAcceptedRaw) {
+      if (now < ignoreSameUntil) return false;
+      if (acceptedNeedsClear && gapSinceDecoded < 1600) return false;
+      if (gapSinceDecoded >= 1600) acceptedNeedsClear = false;
+    }
+
     manualInput.value = text;
     manualBtn.click();
     const identified = !resultCard?.classList.contains('hidden');
     if (identified) {
       lastAcceptedRaw = text;
+      acceptedNeedsClear = true;
+      ignoreSameUntil = now + (batchMode ? 850 : 2200);
       pauseAfterResult();
       return true;
     }
@@ -286,7 +438,7 @@
       stopBtn.classList.remove('hidden');
       await ensureEngines();
       beginLoop();
-      setStatus('Caméra active · lecture Data Matrix');
+      setStatus(batchMode ? 'Scan en série · caméra active' : 'Caméra active · lecture Data Matrix');
       return true;
     }
 
@@ -312,11 +464,14 @@
       if (zxingOk) buildZXingReader();
       resumeNotBefore = 0;
       ignoreSameUntil = 0;
+      lastDecodedAt = 0;
+      acceptedNeedsClear = false;
       beginLoop();
-      setStatus(nativeOk && zxingOk ? 'Caméra active · double moteur Data Matrix' : nativeOk ? 'Caméra active · moteur natif' : zxingOk ? 'Caméra active · moteur renforcé' : 'Caméra active · utilise Photo du code');
+      if (batchMode) setStatus('Scan en série · présente une boîte');
+      else setStatus(nativeOk && zxingOk ? 'Caméra active · double moteur Data Matrix' : nativeOk ? 'Caméra active · moteur natif' : zxingOk ? 'Caméra active · moteur renforcé' : 'Caméra active · utilise Photo du code');
       return true;
     } catch (e) {
-      console.error('BrickScan V2.8.4 caméra', e);
+      console.error('BrickScan V2.11 caméra', e);
       await stopLive(false);
       setStatus(e?.name === 'NotAllowedError' ? 'Accès caméra refusé. Autorise la caméra dans Chrome.' : e?.name === 'NotFoundError' ? 'Aucune caméra arrière disponible.' : `Impossible d’ouvrir la caméra${e?.name ? ' · '+e.name : ''}`);
       return false;
@@ -348,6 +503,8 @@
     paused = false;
     busyNative = false;
     busyZXing = false;
+    clearTimeout(batchResumeTimer);
+    batchResumeTimer = null;
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
     detector = null;
@@ -366,6 +523,8 @@
     zoomWrap?.classList.add('hidden');
     hideAgainButton();
     resumeNotBefore = 0;
+    lastDecodedAt = 0;
+    acceptedNeedsClear = false;
     if (resetStatus) setStatus(`Prêt · v${VERSION}`);
   }
 
@@ -386,10 +545,14 @@
   }
 
   placeAgainButton();
+  injectBatchUi();
 
-  // Le moteur robuste est chargé après app.js et remplace explicitement ses anciens onclick.
   startBtn.onclick = event => { event?.preventDefault(); startLive(); };
-  stopBtn.onclick = event => { event?.preventDefault(); stopLive(true); };
+  stopBtn.onclick = event => {
+    event?.preventDefault();
+    if (batchMode) setBatchMode(false);
+    stopLive(true);
+  };
   if (torchBtn) torchBtn.onclick = event => { event?.preventDefault(); toggleTorch(); };
   scanAgainBtn.onclick = event => { event?.preventDefault(); resumeScan(); };
   if (zoom) zoom.oninput = () => { if (stream) applyZoom(); };
@@ -402,7 +565,10 @@
 
   if (resultCard) {
     const resultObserver = new MutationObserver(() => {
-      if (!resultCard.classList.contains('hidden')) showAgainButton();
+      if (!resultCard.classList.contains('hidden')) {
+        if (batchMode) hideAgainButton();
+        else showAgainButton();
+      }
     });
     resultObserver.observe(resultCard, {attributes:true, attributeFilter:['class']});
   }
