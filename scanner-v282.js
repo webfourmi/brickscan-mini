@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = '2.11.0';
+  const VERSION = '2.11.1';
   const ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js';
   const $ = id => document.getElementById(id);
   const video = $('video');
@@ -43,10 +43,12 @@
   let batchMode = sessionStorage.getItem('brickscan-batch-mode') === '1';
   let batchCount = 0;
   let batchResumeTimer = null;
+  let reopeningCamera = false;
 
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', {willReadFrequently:true});
   const setStatus = text => { if (status) status.textContent = text; };
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   function placeAgainButton() {
     const anchor = fallbackScanner || nativeScanner;
@@ -78,7 +80,11 @@
     style.id = 'batchScanStyles';
     style.textContent = `
       .batch-scan-btn.batch-active{background:#111827!important;color:#fff!important;border-color:#111827!important}
-      .batch-scan-strip{margin-top:9px;padding:10px 11px;border-radius:13px;background:#eef2ff;border:1px solid #c7d2fe;color:#312e81;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px}.batch-scan-strip.hidden{display:none}.batch-scan-strip strong{font-size:12px}.batch-scan-last{margin-top:8px;padding:11px 12px;border-radius:13px;background:#dcfce7;border:1px solid #86efac;color:#166534;display:grid;gap:2px}.batch-scan-last.hidden{display:none}.batch-scan-last strong{font-size:13px}.batch-scan-last small{font-size:10px;color:#15803d}.batch-scan-pulse{animation:batchPulse .45s ease}@keyframes batchPulse{0%{transform:scale(.98);opacity:.55}100%{transform:scale(1);opacity:1}}
+      .batch-scan-strip{margin-top:9px;padding:10px 11px;border-radius:13px;background:#eef2ff;border:1px solid #c7d2fe;color:#312e81;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px}.batch-scan-strip.hidden{display:none}.batch-scan-strip strong{font-size:12px}
+      .batch-scan-last{margin-top:8px;padding:11px 12px;border-radius:13px;background:#dcfce7;border:1px solid #86efac;color:#166534;display:grid;gap:2px}.batch-scan-last.hidden{display:none}.batch-scan-last strong{font-size:13px}.batch-scan-last small{font-size:10px;color:#15803d}.batch-scan-pulse{animation:batchPulse .45s ease}@keyframes batchPulse{0%{transform:scale(.98);opacity:.55}100%{transform:scale(1);opacity:1}}
+      body.batch-scan-active #resultCard,body.batch-scan-active #unknownCard{display:none!important}
+      body.batch-scan-active #nativeScanner{display:block!important;background:#111827}
+      body.batch-scan-active #video{display:block!important;visibility:visible!important;opacity:1!important}
     `;
     document.head.appendChild(style);
 
@@ -128,6 +134,7 @@
   function setBatchMode(value) {
     batchMode = Boolean(value);
     sessionStorage.setItem('brickscan-batch-mode', batchMode ? '1' : '0');
+    document.body.classList.toggle('batch-scan-active', batchMode);
     if (!batchMode) {
       clearTimeout(batchResumeTimer);
       batchResumeTimer = null;
@@ -166,33 +173,6 @@
       box.classList.add('batch-scan-pulse');
     }
     updateBatchUi();
-  }
-
-  function scheduleBatchResume() {
-    clearTimeout(batchResumeTimer);
-    const acceptedAt = Date.now();
-    resumeNotBefore = acceptedAt + 850;
-    ignoreSameUntil = acceptedAt + 850;
-    setStatus('Identifiée ✓ · retire la boîte et présente la suivante');
-
-    setTimeout(() => {
-      if (!batchMode) return;
-      resultCard?.classList.add('hidden');
-      unknownCard?.classList.add('hidden');
-      nativeScanner?.scrollIntoView({behavior:'smooth', block:'center'});
-    }, 90);
-
-    batchResumeTimer = setTimeout(async () => {
-      batchResumeTimer = null;
-      if (!batchMode) return;
-      const track = stream?.getVideoTracks?.()[0];
-      if (!stream || track?.readyState !== 'live') {
-        await startLive();
-      } else {
-        beginLoop();
-      }
-      if (batchMode && stream) setStatus(`Scan en série · ${batchCount} scannée${batchCount > 1 ? 's' : ''} · présente la suivante`);
-    }, 900);
   }
 
   function loadZXing() {
@@ -249,6 +229,137 @@
     }
   }
 
+  function waitForVideoFrame(timeout=900) {
+    return new Promise(resolve => {
+      let done = false;
+      const finish = value => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(Boolean(value));
+      };
+      const timer = setTimeout(() => finish(false), timeout);
+
+      if (typeof video.requestVideoFrameCallback === 'function') {
+        try {
+          video.requestVideoFrameCallback(() => finish(video.videoWidth > 0 && video.videoHeight > 0));
+          return;
+        } catch (_) {}
+      }
+
+      const started = Date.now();
+      const poll = () => {
+        if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) { finish(true); return; }
+        if (Date.now() - started >= timeout) { finish(false); return; }
+        requestAnimationFrame(poll);
+      };
+      poll();
+    });
+  }
+
+  async function setupTrack() {
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    const caps = track.getCapabilities?.() || {};
+    if (Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) {
+      try { await track.applyConstraints({advanced:[{focusMode:'continuous'}]}); } catch (_) {}
+    }
+    if (caps.torch) torchBtn?.classList.remove('hidden');
+    if (caps.zoom && zoom && zoomWrap) {
+      zoom.min = caps.zoom.min;
+      zoom.max = caps.zoom.max;
+      zoom.step = caps.zoom.step || .1;
+      const ideal = Math.min(Math.max(1.7, caps.zoom.min), caps.zoom.max);
+      zoom.value = ideal;
+      zoomWrap.classList.remove('hidden');
+      try { await track.applyConstraints({advanced:[{zoom:ideal}]}); } catch (_) {}
+    }
+  }
+
+  function attachStream() {
+    if (!stream) return;
+    if (video.srcObject !== stream) video.srcObject = stream;
+    video.setAttribute('playsinline','');
+    video.muted = true;
+    placeholder?.classList.add('hidden');
+    nativeScanner?.classList.remove('hidden');
+    fallbackScanner?.classList.add('hidden');
+    startBtn.classList.add('hidden');
+    stopBtn.classList.remove('hidden');
+  }
+
+  async function openFreshCamera() {
+    if (reopeningCamera) return false;
+    reopeningCamera = true;
+    try {
+      if (!window.isSecureContext && location.hostname !== 'localhost') { setStatus('La caméra nécessite HTTPS.'); return false; }
+      if (!navigator.mediaDevices?.getUserMedia) { setStatus('Ce navigateur ne permet pas l’accès caméra.'); return false; }
+
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      try { video.pause(); } catch (_) {}
+      video.srcObject = null;
+      detector = null;
+
+      const zxingLoading = loadZXing();
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio:false,
+        video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30,max:30}}
+      });
+      attachStream();
+      await video.play();
+      await setupTrack();
+      const nativeOk = await buildNativeDetector();
+      const zxingOk = await zxingLoading;
+      if (zxingOk) buildZXingReader();
+      const hasFrame = await waitForVideoFrame(1200);
+      if (!hasFrame) throw new Error('Aucune image vidéo reçue');
+      return nativeOk || zxingOk || hasFrame;
+    } catch (error) {
+      console.error('BrickScan V2.11.1 caméra', error);
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+      try { video.pause(); } catch (_) {}
+      video.srcObject = null;
+      return false;
+    } finally {
+      reopeningCamera = false;
+    }
+  }
+
+  async function ensurePreviewAlive() {
+    let track = stream?.getVideoTracks?.()[0];
+    if (!stream || !track || track.readyState !== 'live' || track.muted) {
+      setStatus('Réactivation de la caméra…');
+      return openFreshCamera();
+    }
+
+    attachStream();
+    try { await video.play(); } catch (_) {}
+    if (await waitForVideoFrame(700)) return true;
+
+    setStatus('Réactivation de l’image caméra…');
+    await sleep(120);
+    track = stream?.getVideoTracks?.()[0];
+    if (track?.readyState === 'live') {
+      try {
+        video.srcObject = null;
+        await sleep(60);
+        video.srcObject = stream;
+        video.muted = true;
+        video.setAttribute('playsinline','');
+        await video.play();
+        if (await waitForVideoFrame(600)) return true;
+      } catch (_) {}
+    }
+
+    return openFreshCamera();
+  }
+
   function drawCrop(scale=.66) {
     const vw = video.videoWidth || 0;
     const vh = video.videoHeight || 0;
@@ -284,15 +395,50 @@
       try {
         const bitmap = make();
         if (!bitmap) continue;
-        const r = zxingReader.decodeWithState(bitmap);
-        const t = r?.getText?.() || r?.text || '';
-        if (t) return String(t);
+        const result = zxingReader.decodeWithState(bitmap);
+        const text = result?.getText?.() || result?.text || '';
+        if (text) return String(text);
       } catch (_) {
       } finally {
         try { zxingReader.reset(); } catch (_) {}
       }
     }
     return '';
+  }
+
+  function beginLoop() {
+    paused = false;
+    scanning = true;
+    busyNative = false;
+    busyZXing = false;
+    lastNative = 0;
+    lastZXing = 0;
+    cropPass = 0;
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(scanLoop);
+  }
+
+  async function scheduleBatchResume() {
+    clearTimeout(batchResumeTimer);
+    const acceptedAt = Date.now();
+    resumeNotBefore = acceptedAt + 550;
+    ignoreSameUntil = acceptedAt + 900;
+    resultCard?.classList.add('hidden');
+    unknownCard?.classList.add('hidden');
+    setStatus('Identifiée ✓ · présente la suivante');
+
+    batchResumeTimer = setTimeout(async () => {
+      batchResumeTimer = null;
+      if (!batchMode) return;
+      const alive = await ensurePreviewAlive();
+      if (!batchMode) return;
+      if (!alive) {
+        setStatus('Caméra interrompue · touche « Terminer la série » puis relance');
+        return;
+      }
+      beginLoop();
+      setStatus(`Scan en série · ${batchCount} scannée${batchCount > 1 ? 's' : ''} · présente la suivante`);
+    }, 600);
   }
 
   function pauseAfterResult() {
@@ -322,8 +468,8 @@
     if (now < resumeNotBefore) return false;
     if (text === lastAcceptedRaw) {
       if (now < ignoreSameUntil) return false;
-      if (acceptedNeedsClear && gapSinceDecoded < 1600) return false;
-      if (gapSinceDecoded >= 1600) acceptedNeedsClear = false;
+      if (acceptedNeedsClear && gapSinceDecoded < 1500) return false;
+      if (gapSinceDecoded >= 1500) acceptedNeedsClear = false;
     }
 
     manualInput.value = text;
@@ -332,9 +478,14 @@
     if (identified) {
       lastAcceptedRaw = text;
       acceptedNeedsClear = true;
-      ignoreSameUntil = now + (batchMode ? 850 : 2200);
+      ignoreSameUntil = now + (batchMode ? 900 : 2200);
       pauseAfterResult();
       return true;
+    }
+
+    if (batchMode) {
+      unknownCard?.classList.add('hidden');
+      setStatus('Code lu mais inconnu · continue avec la suivante');
     }
     return false;
   }
@@ -344,10 +495,10 @@
     busyNative = true;
     try {
       const codes = await detector.detect(video);
-      for (const c of codes || []) if (handoffRaw(c.rawValue || '')) return true;
+      for (const code of codes || []) if (handoffRaw(code.rawValue || '')) return true;
       if (drawCrop(.62)) {
-        const codes2 = await detector.detect(canvas);
-        for (const c of codes2 || []) if (handoffRaw(c.rawValue || '')) return true;
+        const cropped = await detector.detect(canvas);
+        for (const code of cropped || []) if (handoffRaw(code.rawValue || '')) return true;
       }
     } catch (_) {
     } finally {
@@ -386,25 +537,6 @@
     if (scanning && !paused) raf = requestAnimationFrame(scanLoop);
   }
 
-  async function setupTrack() {
-    const track = stream?.getVideoTracks?.()[0];
-    if (!track) return;
-    const caps = track.getCapabilities?.() || {};
-    if (Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) {
-      try { await track.applyConstraints({advanced:[{focusMode:'continuous'}]}); } catch (_) {}
-    }
-    if (caps.torch) torchBtn?.classList.remove('hidden');
-    if (caps.zoom && zoom && zoomWrap) {
-      zoom.min = caps.zoom.min;
-      zoom.max = caps.zoom.max;
-      zoom.step = caps.zoom.step || .1;
-      const ideal = Math.min(Math.max(1.7, caps.zoom.min), caps.zoom.max);
-      zoom.value = ideal;
-      zoomWrap.classList.remove('hidden');
-      try { await track.applyConstraints({advanced:[{zoom:ideal}]}); } catch (_) {}
-    }
-  }
-
   async function ensureEngines() {
     const nativeOk = detector ? true : await buildNativeDetector();
     const zxingOk = zxingReader ? true : await loadZXing();
@@ -412,68 +544,36 @@
     return {nativeOk, zxingOk};
   }
 
-  function beginLoop() {
-    paused = false;
-    scanning = true;
-    busyNative = false;
-    busyZXing = false;
-    lastNative = 0;
-    lastZXing = 0;
-    cropPass = 0;
-    if (raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(scanLoop);
-  }
-
   async function startLive() {
     resultCard?.classList.add('hidden');
     unknownCard?.classList.add('hidden');
     hideAgainButton();
 
-    const track = stream?.getVideoTracks?.()[0];
-    if (stream && track?.readyState === 'live') {
-      if (video.srcObject !== stream) video.srcObject = stream;
-      try { await video.play(); } catch (_) {}
-      placeholder?.classList.add('hidden');
-      startBtn.classList.add('hidden');
-      stopBtn.classList.remove('hidden');
-      await ensureEngines();
-      beginLoop();
-      setStatus(batchMode ? 'Scan en série · caméra active' : 'Caméra active · lecture Data Matrix');
-      return true;
-    }
-
-    if (!window.isSecureContext && location.hostname !== 'localhost') { setStatus('La caméra nécessite HTTPS.'); return false; }
-    if (!navigator.mediaDevices?.getUserMedia) { setStatus('Ce navigateur ne permet pas l’accès caméra.'); return false; }
-
     startBtn.disabled = true;
-    setStatus('Ouverture de la caméra…');
     try {
-      const zxingLoading = loadZXing();
-      stream = await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30,max:30}}});
-      video.srcObject = stream;
-      video.setAttribute('playsinline','');
-      video.muted = true;
-      await video.play();
-      placeholder?.classList.add('hidden');
-      nativeScanner?.classList.remove('hidden');
-      startBtn.classList.add('hidden');
-      stopBtn.classList.remove('hidden');
-      await setupTrack();
-      const nativeOk = await buildNativeDetector();
-      const zxingOk = await zxingLoading;
-      if (zxingOk) buildZXingReader();
+      const track = stream?.getVideoTracks?.()[0];
+      let alive = false;
+      if (stream && track?.readyState === 'live') alive = await ensurePreviewAlive();
+      else alive = await openFreshCamera();
+
+      if (!alive) {
+        setStatus('Impossible de rétablir la caméra.');
+        return false;
+      }
+
+      await ensureEngines();
       resumeNotBefore = 0;
-      ignoreSameUntil = 0;
-      lastDecodedAt = 0;
-      acceptedNeedsClear = false;
+      if (!lastAcceptedRaw) {
+        ignoreSameUntil = 0;
+        lastDecodedAt = 0;
+        acceptedNeedsClear = false;
+      }
       beginLoop();
-      if (batchMode) setStatus('Scan en série · présente une boîte');
-      else setStatus(nativeOk && zxingOk ? 'Caméra active · double moteur Data Matrix' : nativeOk ? 'Caméra active · moteur natif' : zxingOk ? 'Caméra active · moteur renforcé' : 'Caméra active · utilise Photo du code');
+      setStatus(batchMode ? 'Scan en série · présente une boîte' : 'Caméra active · lecture Data Matrix');
       return true;
-    } catch (e) {
-      console.error('BrickScan V2.11 caméra', e);
-      await stopLive(false);
-      setStatus(e?.name === 'NotAllowedError' ? 'Accès caméra refusé. Autorise la caméra dans Chrome.' : e?.name === 'NotFoundError' ? 'Aucune caméra arrière disponible.' : `Impossible d’ouvrir la caméra${e?.name ? ' · '+e.name : ''}`);
+    } catch (error) {
+      console.error('BrickScan V2.11.1 startLive', error);
+      setStatus(error?.name === 'NotAllowedError' ? 'Accès caméra refusé. Autorise la caméra dans Chrome.' : 'Impossible d’ouvrir la caméra.');
       return false;
     } finally {
       startBtn.disabled = false;
@@ -510,7 +610,7 @@
     detector = null;
     torchOn = false;
     if (stream) {
-      stream.getTracks().forEach(t => t.stop());
+      stream.getTracks().forEach(track => track.stop());
       stream = null;
     }
     try { video.pause(); } catch (_) {}
@@ -546,6 +646,7 @@
 
   placeAgainButton();
   injectBatchUi();
+  document.body.classList.toggle('batch-scan-active', batchMode);
 
   startBtn.onclick = event => { event?.preventDefault(); startLive(); };
   stopBtn.onclick = event => {
@@ -558,10 +659,16 @@
   if (zoom) zoom.oninput = () => { if (stream) applyZoom(); };
 
   document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => {
-    if (btn.dataset.view !== 'scanView' && (scanning || paused || stream)) stopLive(false);
+    if (btn.dataset.view !== 'scanView' && (scanning || paused || stream)) {
+      if (batchMode) setBatchMode(false);
+      stopLive(false);
+    }
   }));
 
-  photoInput?.addEventListener('change', () => { if (stream) stopLive(false); }, true);
+  photoInput?.addEventListener('change', () => {
+    if (batchMode) setBatchMode(false);
+    if (stream) stopLive(false);
+  }, true);
 
   if (resultCard) {
     const resultObserver = new MutationObserver(() => {
