@@ -1,6 +1,6 @@
 {
-  "version": "2.10.0",
-  "build": 210,
-  "released": "2026-09-12",
-  "notes": "Ajout de deux listes dans Collection : doubles et figurines avec accessoires manquants, avec compteurs, détail par exemplaire et export CSV"
+  "version": "2.10.1",
+  "build": 211,
+  "released": "2026-09-13",
+  "notes": "La page Collection est allégée : un seul bouton Listes ouvre ensuite Doubles ou Accessoires manquants, avec leurs compteurs et exports CSV"
 }
