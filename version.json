@@ -1,6 +1,6 @@
 {
-  "version": "2.10.1",
-  "build": 211,
+  "version": "2.11.0",
+  "build": 2110,
   "released": "2026-09-13",
-  "notes": "La page Collection est allégée : un seul bouton Listes ouvre ensuite Doubles ou Accessoires manquants, avec leurs compteurs et exports CSV"
+  "notes": "Nouveau Scan en série : la caméra reste ouverte pour enchaîner plusieurs boîtes, affiche la dernière figurine reconnue et reprend automatiquement la lecture sans relancer l’application"
 }
