@@ -1,6 +1,6 @@
 {
-  "version": "2.11.0",
-  "build": 2110,
+  "version": "2.11.1",
+  "build": 2111,
   "released": "2026-09-13",
-  "notes": "Nouveau Scan en série : la caméra reste ouverte pour enchaîner plusieurs boîtes, affiche la dernière figurine reconnue et reprend automatiquement la lecture sans relancer l’application"
+  "notes": "Correctif Scan en série sur Android : l’aperçu caméra est vérifié et réactivé entre deux boîtes, avec redémarrage automatique du flux si l’image devient noire"
 }
