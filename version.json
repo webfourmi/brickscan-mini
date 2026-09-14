@@ -1,6 +1,6 @@
 {
-  "version": "2.11.1",
-  "build": 2111,
-  "released": "2026-09-13",
-  "notes": "Correctif Scan en série sur Android : l’aperçu caméra est vérifié et réactivé entre deux boîtes, avec redémarrage automatique du flux si l’image devient noire"
+  "version": "2.11.2",
+  "build": 2112,
+  "released": "2026-09-14",
+  "notes": "Correctif Historique : le bouton Effacer fonctionne de façon autonome, vide bien les scans stockés et revient proprement sur l’onglet Historique"
 }
