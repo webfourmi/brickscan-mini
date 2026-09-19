@@ -349,7 +349,8 @@
   $('scanAgainBtn').onclick=()=>{$('resultCard').classList.add('hidden');startScanner();};
   $('ownedBtn').onclick=()=>{if(!currentResult)return;owned.has(currentResult.id)?owned.delete(currentResult.id):owned.add(currentResult.id);saveSet('brickscan-owned',owned);updateOwnedButton();};
   $('copyUnknown').onclick=async()=>{try{await navigator.clipboard.writeText(lastRaw);$('copyUnknown').textContent='Copié ✓';setTimeout(()=>$('copyUnknown').textContent='Copier le code',1200)}catch{}};
-  $('clearCollection').onclick=()=>{if(confirm('Vider toute la collection ?')){owned.clear();saveSet('brickscan-owned',owned);renderCollection();}};
+  const clearCollectionBtn=$('clearCollection');
+  if(clearCollectionBtn) clearCollectionBtn.onclick=()=>{if(confirm('Vider toute la collection ?')){owned.clear();saveSet('brickscan-owned',owned);renderCollection();}};
   $('clearHistory').onclick=()=>{history=[];localStorage.setItem('brickscan-history','[]');renderHistory();};
 
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').classList.remove('hidden');});
