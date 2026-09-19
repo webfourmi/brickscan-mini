@@ -1,6 +1,6 @@
 {
-  "version": "2.11.2",
-  "build": 2112,
-  "released": "2026-09-14",
-  "notes": "Correctif Historique : le bouton Effacer fonctionne de façon autonome, vide bien les scans stockés et revient proprement sur l’onglet Historique"
+  "version": "2.12.0",
+  "build": 2120,
+  "released": "2026-09-19",
+  "notes": "Le bouton Scanner la suivante reste visible dans la fiche résultat et relance la caméra automatiquement sans redémarrer BrickScan"
 }
