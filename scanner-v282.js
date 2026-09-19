@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = '2.11.1';
+  const VERSION = '2.12.0';
   const ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js';
   const $ = id => document.getElementById(id);
   const video = $('video');
@@ -51,13 +51,13 @@
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   function placeAgainButton() {
-    const anchor = fallbackScanner || nativeScanner;
-    if (!anchor || !scanAgainBtn) return;
-    if (scanAgainBtn.previousElementSibling !== anchor) anchor.insertAdjacentElement('afterend', scanAgainBtn);
+    if (!scanAgainBtn) return;
+    // Le bouton reste dans la fiche résultat afin d'être visible immédiatement
+    // après l'identification, au lieu d'être déplacé au-dessus de la fiche.
     scanAgainBtn.classList.add('full', 'hidden');
     scanAgainBtn.classList.remove('ghost');
     scanAgainBtn.classList.add('primary');
-    scanAgainBtn.textContent = '📷 Scanner une autre boîte';
+    scanAgainBtn.textContent = '📷 Scanner la suivante';
     scanAgainBtn.style.marginTop = '10px';
   }
 
@@ -318,7 +318,7 @@
       if (!hasFrame) throw new Error('Aucune image vidéo reçue');
       return nativeOk || zxingOk || hasFrame;
     } catch (error) {
-      console.error('BrickScan V2.11.1 caméra', error);
+      console.error('BrickScan V2.12 caméra', error);
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
@@ -572,7 +572,7 @@
       setStatus(batchMode ? 'Scan en série · présente une boîte' : 'Caméra active · lecture Data Matrix');
       return true;
     } catch (error) {
-      console.error('BrickScan V2.11.1 startLive', error);
+      console.error('BrickScan V2.12 startLive', error);
       setStatus(error?.name === 'NotAllowedError' ? 'Accès caméra refusé. Autorise la caméra dans Chrome.' : 'Impossible d’ouvrir la caméra.');
       return false;
     } finally {
@@ -587,12 +587,16 @@
     hideAgainButton();
     resumeNotBefore = Date.now() + 500;
     ignoreSameUntil = Date.now() + 2200;
-    setStatus('Change de boîte…');
+    setStatus('Préparation du scan suivant…');
     nativeScanner?.scrollIntoView({behavior:'smooth', block:'center'});
     try {
-      await startLive();
+      let ok = await startLive();
+      if (!ok) {
+        ok = await openFreshCamera();
+        if (ok) beginLoop();
+      }
       resumeNotBefore = Date.now() + 500;
-      setStatus('Nouvelle boîte · scan en cours…');
+      setStatus(ok ? 'Caméra prête · présente la figurine suivante' : 'Caméra indisponible · touche Scanner pour réessayer');
     } finally {
       scanAgainBtn.disabled = false;
     }
