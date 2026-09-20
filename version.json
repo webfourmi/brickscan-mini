@@ -1,6 +1,6 @@
 {
-  "version": "2.12.0",
-  "build": 2120,
-  "released": "2026-09-19",
-  "notes": "Le bouton Scanner la suivante reste visible dans la fiche résultat et relance la caméra automatiquement sans redémarrer BrickScan"
+  "version": "2.12.1",
+  "build": 2121,
+  "released": "2026-09-20",
+  "notes": "Après chaque scan, la caméra est réellement arrêtée puis rouverte pour la figurine suivante, avec remise à zéro de l’anti-doublon"
 }
