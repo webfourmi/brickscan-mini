@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = '2.12.0';
+  const VERSION = '2.12.1';
   const ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js';
   const $ = id => document.getElementById(id);
   const video = $('video');
@@ -36,8 +36,7 @@
   let cropPass = 0;
   let raf = 0;
   let lastAcceptedRaw = '';
-  let lastDecodedAt = 0;
-  let acceptedNeedsClear = false;
+  let lastAcceptedAt = 0;
   let ignoreSameUntil = 0;
   let resumeNotBefore = 0;
   let batchMode = sessionStorage.getItem('brickscan-batch-mode') === '1';
@@ -318,7 +317,7 @@
       if (!hasFrame) throw new Error('Aucune image vidéo reçue');
       return nativeOk || zxingOk || hasFrame;
     } catch (error) {
-      console.error('BrickScan V2.12 caméra', error);
+      console.error('BrickScan V2.12.1 caméra', error);
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
@@ -430,13 +429,15 @@
     batchResumeTimer = setTimeout(async () => {
       batchResumeTimer = null;
       if (!batchMode) return;
-      const alive = await ensurePreviewAlive();
+      const alive = await hardRestartForNextScan();
       if (!batchMode) return;
       if (!alive) {
         setStatus('Caméra interrompue · touche « Terminer la série » puis relance');
         return;
       }
-      beginLoop();
+      // En série on garde un délai anti-relecture plus long pour laisser
+      // le temps de retirer la boîte précédente.
+      if (lastAcceptedRaw) ignoreSameUntil = Date.now() + 2600;
       setStatus(`Scan en série · ${batchCount} scannée${batchCount > 1 ? 's' : ''} · présente la suivante`);
     }, 600);
   }
@@ -462,23 +463,20 @@
     const text = String(raw || '').trim();
     if (!text) return false;
     const now = Date.now();
-    const gapSinceDecoded = lastDecodedAt ? now - lastDecodedAt : Infinity;
-    lastDecodedAt = now;
 
     if (now < resumeNotBefore) return false;
-    if (text === lastAcceptedRaw) {
-      if (now < ignoreSameUntil) return false;
-      if (acceptedNeedsClear && gapSinceDecoded < 1500) return false;
-      if (gapSinceDecoded >= 1500) acceptedNeedsClear = false;
-    }
+
+    // Anti-relecture bornée dans le temps. L'ancienne logique pouvait repousser
+    // le délai à chaque nouvelle détection du même code et bloquer le scanner.
+    if (text === lastAcceptedRaw && now < ignoreSameUntil) return false;
 
     manualInput.value = text;
     manualBtn.click();
     const identified = !resultCard?.classList.contains('hidden');
     if (identified) {
       lastAcceptedRaw = text;
-      acceptedNeedsClear = true;
-      ignoreSameUntil = now + (batchMode ? 900 : 2200);
+      lastAcceptedAt = now;
+      ignoreSameUntil = now + (batchMode ? 3200 : 900);
       pauseAfterResult();
       return true;
     }
@@ -565,14 +563,13 @@
       resumeNotBefore = 0;
       if (!lastAcceptedRaw) {
         ignoreSameUntil = 0;
-        lastDecodedAt = 0;
-        acceptedNeedsClear = false;
+        lastAcceptedAt = 0;
       }
       beginLoop();
       setStatus(batchMode ? 'Scan en série · présente une boîte' : 'Caméra active · lecture Data Matrix');
       return true;
     } catch (error) {
-      console.error('BrickScan V2.12 startLive', error);
+      console.error('BrickScan V2.12.1 startLive', error);
       setStatus(error?.name === 'NotAllowedError' ? 'Accès caméra refusé. Autorise la caméra dans Chrome.' : 'Impossible d’ouvrir la caméra.');
       return false;
     } finally {
@@ -580,22 +577,55 @@
     }
   }
 
+  async function hardRestartForNextScan() {
+    scanning = false;
+    paused = false;
+    busyNative = false;
+    busyZXing = false;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    detector = null;
+    torchOn = false;
+
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+    try { video.pause(); } catch (_) {}
+    video.srcObject = null;
+
+    placeholder?.classList.remove('hidden');
+    nativeScanner?.classList.remove('hidden');
+    startBtn.classList.add('hidden');
+    stopBtn.classList.remove('hidden');
+    torchBtn?.classList.add('hidden');
+    zoomWrap?.classList.add('hidden');
+
+    setStatus('Réinitialisation de la caméra…');
+    await sleep(380);
+
+    const ok = await openFreshCamera();
+    if (!ok) return false;
+
+    // Un clic sur “Scanner la suivante” signifie que l'utilisateur veut
+    // volontairement un nouveau scan, même si le code est identique.
+    lastAcceptedRaw = '';
+    lastAcceptedAt = 0;
+    ignoreSameUntil = 0;
+    resumeNotBefore = Date.now() + 450;
+    beginLoop();
+    return true;
+  }
+
   async function resumeScan() {
     scanAgainBtn.disabled = true;
     resultCard?.classList.add('hidden');
     unknownCard?.classList.add('hidden');
     hideAgainButton();
-    resumeNotBefore = Date.now() + 500;
-    ignoreSameUntil = Date.now() + 2200;
     setStatus('Préparation du scan suivant…');
     nativeScanner?.scrollIntoView({behavior:'smooth', block:'center'});
     try {
-      let ok = await startLive();
-      if (!ok) {
-        ok = await openFreshCamera();
-        if (ok) beginLoop();
-      }
-      resumeNotBefore = Date.now() + 500;
+      const ok = await hardRestartForNextScan();
       setStatus(ok ? 'Caméra prête · présente la figurine suivante' : 'Caméra indisponible · touche Scanner pour réessayer');
     } finally {
       scanAgainBtn.disabled = false;
@@ -627,8 +657,7 @@
     zoomWrap?.classList.add('hidden');
     hideAgainButton();
     resumeNotBefore = 0;
-    lastDecodedAt = 0;
-    acceptedNeedsClear = false;
+    lastAcceptedAt = 0;
     if (resetStatus) setStatus(`Prêt · v${VERSION}`);
   }
 
